@@ -58,68 +58,34 @@ except ImportError:
 class GraphAPI(object):
     """A client for the Facebook Graph API.
 
-    See http://developers.facebook.com/docs/api for complete documentation
-    for the API.
-
     The Graph API is made up of the objects in Facebook (e.g., people, pages,
     events, photos) and the connections between them (e.g., friends,
-    photo tags, and event RSVPs). This client provides access to those
-    primitive types in a generic way. For example, given an OAuth access
-    token, this will fetch the profile of the active user and the list
-    of the user's friends:
-
-       graph = facebook.GraphAPI(access_token)
-       user = graph.get_object("me")
-       friends = graph.get_connections(user["id"], "friends")
+    photo tags, and event RSVPs).
 
     You can see a list of all of the objects and connections supported
     by the API at http://developers.facebook.com/docs/reference/api/.
 
-    You can obtain an access token via OAuth or by using the Facebook
-    JavaScript SDK. See http://developers.facebook.com/docs/authentication/
+    You can obtain an access token via OAuth. See http://developers.facebook.com/docs/authentication/
     for details.
-
-    If you are using the JavaScript SDK, you can use the
-    get_user_from_cookie() method below to get the OAuth access token
-    for the active user from the cookie saved by the SDK.
     """
     
     def __init__(self, access_token=None):
         self.access_token = access_token
-
-    def get_object(self, id, **args):
+    
+    def get_object(self, ids, **args):
         """Fetchs the given object from the graph."""
-        return self.request(id, args)
+        if isinstance(ids, list) or isinstance(ids, set):
+            args["ids"] = ",".join(ids)
+        elif not isinstance(ids, str):
+            raise Exception("Invalid id type.")
+        return self.request(ids, args)
 
-    def get_objects(self, ids, **args):
-        """Fetchs all of the given object from the graph.
-
-        We return a map from ID to object. If any of the IDs are invalid,
-        we raise an exception.
-        """
-        args["ids"] = ",".join(ids)
-        return self.request("", args)
-
-    def get_connections(self, id, connection_name, **args):
+    def get_connections(self, conn_id, connection_name, **args):
         """Fetchs the connections for given object."""
-        return self.request(id + "/" + connection_name, args)
+        return self.request(conn_id + "/" + connection_name, args)
 
-    def put_object(self, parent_object, connection_name, **data):
+    def put_object(self, obj_type, parent_object, message=None):
         """Writes the given object to the graph, connected to the given parent.
-
-        For example,
-
-            graph.put_object("me", "feed", message="Hello, world")
-
-        writes "Hello, world" to the active user's wall. Likewise, this
-        will comment on a the first post of the active user's feed:
-
-            feed = graph.get_connections("me", "feed")
-            post = feed["data"][0]
-            graph.put_object(post["id"], "comments", message="First!")
-
-        See http://developers.facebook.com/docs/api#publishing for all of
-        the supported writeable objects.
 
         Most write operations require extended permissions. For example,
         publishing wall posts requires the "publish_stream" permission. See
@@ -127,33 +93,15 @@ class GraphAPI(object):
         extended permissions.
         """
         assert self.access_token, "Write operations require an access token"
-        return self.request(parent_object + "/" + connection_name, post_args=data)
-
-    def put_wall_post(self, message, attachment={}, profile_id="me"):
-        """Writes a wall post to the given profile's wall.
-
-        We default to writing to the authenticated user's wall if no
-        profile_id is specified.
-
-        attachment adds a structured attachment to the status message being
-        posted to the Wall. It should be a dictionary of the form:
-
-            {"name": "Link name"
-             "link": "http://www.example.com/",
-             "caption": "{*actor*} posted a new review",
-             "description": "This is a longer description of the attachment",
-             "picture": "http://www.example.com/thumbnail.jpg"}
-
-        """
-        return self.put_object(profile_id, "feed", message=message, **attachment)
-
-    def put_comment(self, object_id, message):
-        """Writes the given comment on the given post."""
-        return self.put_object(object_id, "comments", message=message)
-
-    def put_like(self, object_id):
-        """Likes the given post."""
-        return self.put_object(object_id, "likes")
+        if obj_type == "comment":
+            connection_name = "comments"
+        elif obj_type == "like"
+            connection_name = "likes"
+        elif obj_type == "wall post":
+            connection_name = "feed"
+        else:
+            raise Exception('Not a common object.')
+        return self.request(parent_object + "/" + connection_name, post_args=[message])
 
     def delete_object(self, id):
         """Deletes the object with the given ID from the graph."""
@@ -179,6 +127,6 @@ class GraphAPI(object):
         finally:
             file.close()
         if response.get("error"):
-            raise Error(response["error"]["type"],
-                        response["error"]["message"])
+            raise Exception(response["error"]["type"],
+                            response["error"]["message"])
         return response
