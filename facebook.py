@@ -22,13 +22,9 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Python client library for the Facebook Platform.
-
-This client library is designed to support the Graph API and the official
-Facebook JavaScript SDK, which is the canonical way to implement
-Facebook authentication. Read more about the Graph API at
-http://developers.facebook.com/docs/api. You can download the Facebook
-JavaScript SDK at http://github.com/facebook/connect-js/.
+"""
+Python client library for the Facebook Platform. This client library is designed to support the
+Graph API. Read more about the Graph API at http://developers.facebook.com/docs/api.
 
 If your application is using Google AppEngine's webapp framework, your
 usage of this module might look like this:
@@ -38,7 +34,6 @@ usage of this module might look like this:
         graph = facebook.GraphAPI(user["access_token"])
         profile = graph.get_object("me")
         friends = graph.get_connections("me", "friends")
-
 """
 
 import cgi
@@ -88,6 +83,7 @@ class GraphAPI(object):
     get_user_from_cookie() method below to get the OAuth access token
     for the active user from the cookie saved by the SDK.
     """
+    
     def __init__(self, access_token=None):
         self.access_token = access_token
 
@@ -183,40 +179,6 @@ class GraphAPI(object):
         finally:
             file.close()
         if response.get("error"):
-            raise GraphAPIError(response["error"]["type"],
-                                response["error"]["message"])
+            raise Error(response["error"]["type"],
+                        response["error"]["message"])
         return response
-
-
-class GraphAPIError(Exception):
-    def __init__(self, type, message):
-        Exception.__init__(self, message)
-        self.type = type
-
-
-def get_user_from_cookie(cookies, app_id, app_secret):
-    """Parses the cookie set by the official Facebook JavaScript SDK.
-
-    cookies should be a dictionary-like object mapping cookie names to
-    cookie values.
-
-    If the user is logged in via Facebook, we return a dictionary with the
-    keys "uid" and "access_token". The former is the user's Facebook ID,
-    and the latter can be used to make authenticated requests to the Graph API.
-    If the user is not logged in, we return None.
-
-    Download the official Facebook JavaScript SDK at
-    http://github.com/facebook/connect-js/. Read more about Facebook
-    authentication at http://developers.facebook.com/docs/authentication/.
-    """
-    cookie = cookies.get("fbs_" + app_id, "")
-    if not cookie: return None
-    args = dict((k, v[-1]) for k, v in cgi.parse_qs(cookie.strip('"')).items())
-    payload = "".join(k + "=" + args[k] for k in sorted(args.keys())
-                      if k != "sig")
-    sig = hashlib.md5(payload + app_secret).hexdigest()
-    expires = int(args["expires"])
-    if sig == args.get("sig") and (expires == 0 or time.time() < expires):
-        return args
-    else:
-        return None
