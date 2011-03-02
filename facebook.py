@@ -36,9 +36,6 @@ usage of this module might look like this:
         friends = graph.get_connections("me", "friends")
 """
 
-import cgi
-import hashlib
-import time
 import urllib
 
 # Find a JSON parser
