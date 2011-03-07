@@ -1,0 +1,8 @@
+Facebook Research Application
+
+This is a Python-based Facebook application made to test the ability of support vector machines
+to predict the importance of a particular Facebook post to a given user.
+
+The application takes a user's previous posts, comments, etc. as well as that of their friends,
+trains a support vector machine with the retrieved data, and then predicts the importance of a new
+set of posts.
