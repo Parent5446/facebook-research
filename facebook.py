@@ -36,6 +36,8 @@ usage of this module might look like this:
         friends = graph.get_connections("me", "friends")
 """
 
+# https://www.facebook.com/dialog/oauth?client_id=YOUR_APP_ID&redirect_uri=parent5446.homelinux.com/facebook&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access
+
 import urllib
 
 # Find a JSON parser
