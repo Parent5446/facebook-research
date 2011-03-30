@@ -38,15 +38,6 @@ usage of this module might look like this:
 
 # https://www.facebook.com/dialog/oauth?client_id=YOUR_APP_ID&redirect_uri=parent5446.homelinux.com/facebook&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access
 
-# Process:
-# 1) Get list of friends
-# 2) Get the walls of the user and all friends
-# 3) For each post, if user is author or if user has liked or commented, it is important.
-# 4) Get the size of the post in words
-# 5) Check the user's wall and author's wall for the last interaction
-# 6) Check the author's wall for all posts the user liked or commented on in past three days
-# 7) Check the user's wall for all posts author liked or commented on in past three days
-
 import urllib
 
 # Find a JSON parser
@@ -138,3 +129,45 @@ class GraphAPI(object):
             raise Exception(response["error"]["type"],
                             response["error"]["message"])
         return response
+
+
+# Process:
+# 1) Get list of friends (me/friends)
+# 2) Get the walls of the user and all friends (<friend>/feed)
+# 3) For each post, if a dict with the user's name, id is in the 'from' key or in the 'data' key of
+#    either the 'comments' or 'likes' key, then it is important. Otherwise, unimportant.
+# 4) Get the size of the post in words
+# 5) Check the user's wall and author's wall for the last interaction
+#       * Get <friend>/feed and me/feed
+#       * Filter only posts with 'created_time' key before the test post being analyzed
+#       * For each wall go through each post:
+#           * If the friend's wall, did the user post it?
+#           * If the user's wall, did the author post it?
+#           * If the friend's wall, is a dict with user's name, id in the 'data' key of the 'comments' key?
+#           * If the user's wall, is a dict with author's name, id in the 'data' key of the 'comments' key?
+#       * Get the first post in each wall that satifies *one* of those conditions.
+#       * Compare timestamps under 'created_time' and see which was first
+#       * Calculate the time difference between this post and the post being analyzed
+# 6) Check the author's wall for all posts the user liked or commented on in past three days
+#       * Get <friend>/feed
+#       * Take result['data'] and filter only posts in past three days
+#       * Filter only posts whose 'from' key has a dictionary with the name, id of author
+#       * Check the value of 'data' key under the 'likes' key and check for a dict with name, id of user
+#       * Check the value of 'data' key under the 'comments' key and check for a dict with name, id of user
+#       * Count the number of posts
+# 7) Check the user's wall for all posts author liked or commented on in past three day
+#       * Get me/feed
+#       * Take result['data'] and filter only posts in past three days
+#       * Filter only posts whose 'from' key has a dictionary with the name, id of user
+#       * Check the value of 'data' key under the 'likes' key and check for a dict with name, id of author
+#       * Check the value of 'data' key under the 'comments' key and check for a dict with name, id of author
+#       * Count the number of posts
+# 8) Check which likes the user and author have in common
+#       * Get me/likes and <friend>/likes
+#       * Take result['data']
+#       * Make a list of the 'id' values for each dictionary in the list
+#       * Go through the user's likes and find a correlating author's like
+#       * Count the number of common likes
+
+#TODO: Authenticate app and get auth token
+
