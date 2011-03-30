@@ -79,8 +79,12 @@ class GraphAPI(object):
             raise Exception("Invalid id type.")
         return self.request(ids, args)
 
-    def get_connections(self, conn_id, connection_name, **args):
-        """Fetchs the connections for given object."""
+    def get_connection(self, conn_id, connection_name, **args):
+        """Fetchs the connections for given object.
+        
+        Gets a given connection for an object. Pass the limit argument to
+        set how many connections to get.
+        """
         return self.request(conn_id + "/" + connection_name, args)
 
     def put_object(self, obj_type, parent_object, message=None):
@@ -129,6 +133,36 @@ class GraphAPI(object):
             raise Exception(response["error"]["type"],
                             response["error"]["message"])
         return response
+
+class User:
+    """A class for a Facebook user.
+    
+    Stores a list of the user's wall posts, a list of friends (and IDs), and the user's likes.
+    """
+    
+    import_fields = 'comments', 'created_time', 'from', 'likes', 'message'
+    
+    def __init__(self, graph, user_id, recurse_friends=False):
+        # Get the user
+        self.me = graph.get_object(user_id)
+        
+        # If recurse_friends, make a user object for each friend, which in turn gets their
+        # wall and likes.
+        if recurse_friends:
+            self.friends = [User(friend['id']) for friend in graph.get_connection(user_id, 'friends', limit=5000)[data]]
+        else
+            self.friends = graph.get_connection(user_id, 'friends', limit=5000)[data]
+        
+        # Get the user's wall and likes. Filter the wall to only get the fields we need
+        # and only keep the IDs from the likes
+        self.wall = [dict([(key, value) for key, value in post if key in self.import_fields])
+                     for post in graph.get_connection(user_id, 'feed', limit=500)[data]]
+        self.likes = [like['id'] for like in graph.get_connection(user_id, 'likes')[data]]
+    
+    def intersect(self, friend):
+        likes1 = self.likes
+        likes2 = friend.likes
+        return list(set(likes1) & set(likes2))
 
 
 # Process:
