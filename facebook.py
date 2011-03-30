@@ -38,6 +38,15 @@ usage of this module might look like this:
 
 # https://www.facebook.com/dialog/oauth?client_id=YOUR_APP_ID&redirect_uri=parent5446.homelinux.com/facebook&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access
 
+# Process:
+# 1) Get list of friends
+# 2) Get the walls of the user and all friends
+# 3) For each post, if user is author or if user has liked or commented, it is important.
+# 4) Get the size of the post in words
+# 5) Check the user's wall and author's wall for the last interaction
+# 6) Check the author's wall for all posts the user liked or commented on in past three days
+# 7) Check the user's wall for all posts author liked or commented on in past three days
+
 import urllib
 
 # Find a JSON parser
