@@ -297,14 +297,8 @@ for post in posts:
     # Find out how long since the two users last interacted.
     if author.identity != user.identity:
         # For each wall, filter posts that the other person either wrote or commented on.
-        wall_me = user.wall_filter(end_time=post['created_time'],
-                                   author=author,
-                                   commented_by=author,
-                                   intersect=False)
-        wall_you = author.wall_filter(end_time=post['created_time'],
-                                      author=user,
-                                      commented_by=user,
-                                      intersect=False)
+        wall_me = user.wall_filter(end_time=post['created_time'], author=author, commented_by=author, intersect=False)
+        wall_you = author.wall_filter(end_time=post['created_time'], author=user, commented_by=user, intersect=False)
         
         # Sort and get the earliest from each.
         wall_me = sorted(wall_me, key=operator.itemgetter('created_time'))
@@ -325,25 +319,13 @@ for post in posts:
     
     # Find how many of the author's posts the user liked or commented on in past three days
     three_days_ago = ?
-    posts_user_liked = author.wall_filter(start_time=three_days_ago,
-                                          end_time=post['created_time'],
-                                          author=author,
-                                          liked_by=user)
-    posts_user_commented = author.wall_filter(start_time=three_days_ago,
-                                              end_time=post['created_time'],
-                                              author=author,
-                                              commented_by=user)
+    posts_user_liked = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, liked_by=user)
+    posts_user_commented = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, commented_by=user)
     interactions_me2you = len(posts_user_liked) + len(posts_user_commented)
     
     # Find how many of the user's posts the author liked or commented on in past three days
-    posts_author_liked = user.wall_filter(start_time=three_days_ago,
-                                          end_time=post['created_time'],
-                                          author=user,
-                                          liked_by=author)
-    posts_author_commented = user.wall_filter(start_time=three_days_ago,
-                                              end_time=post['created_time'],
-                                              author=user,
-                                              commented_by=author)
+    posts_author_liked = user.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=user, liked_by=author)
+    posts_author_commented = user.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=user, commented_by=author)
     interactions_you2me = len(posts_author_liked) + len(posts_author_commented)
     
     
