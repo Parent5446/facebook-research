@@ -185,6 +185,8 @@ class User:
             post['to'] = {'name': self.me['name'], 'id': user_id}
             wall.append(post)
         self.wall = wall
+        
+        self.identity = {'name': self.me['name'], 'id': user_id}
     
     def intersect(self, friend):
         """
@@ -215,7 +217,7 @@ class User:
         return random.sample(posts, n)
         
     
-    def wall_filter(self, time_start=False, time_end=False, author=False, liked_by=False, commented_by=False):
+    def wall_filter(self, time_start=False, time_end=False, author=False, liked_by=False, commented_by=False, intersect=True):
         """
         Filter the wall posts with various filters.
         
@@ -239,28 +241,39 @@ class User:
         @rtype: C{list}
         """
         posts = self.wall
-        
+            
         if isinstance(time_start, datetime.datetime):
             posts = [post for post in posts if post['created_time'] > time_start]
         if isinstance(time_end, datetime.datetime):
             posts = [post for post in posts if post['created_time'] < time_end]
         
-        if isinstance(author, int):
-            posts = [post for post in posts if post['from']['id'] == author]
-        elif isinstance(author, str):
-            posts = [post for post in posts if post['from']['name'] == author]
-
-        if isinstance(liked_by, int):
-            posts = [post for post in posts if [like for like in post['likes']['data'] if like['id'] == liked_by]]
-        elif isinstance(author, str):
-            posts = [post for post in posts if [like for like in post['likes']['data'] if like['name'] == liked_by]]
-
-        if isinstance(liked_by, int):
-            posts = [post for post in posts if [comm for comm in post['comments']['data'] if comm['from']['id'] == commented_by]]
-        elif isinstance(author, str):
-            posts = [post for post in posts if [comm for comm in post['comments']['data'] if comm['from']['name'] == commented_by]]
+        posts = set(posts)
         
-        return posts
+        if isinstance(author, int):
+            posts3 = set([post for post in posts if post['from']['id'] == author])
+        elif isinstance(author, str):
+            posts3 = set([post for post in posts if post['from']['name'] == author])
+        else:
+            posts3 = set(posts)
+
+        if isinstance(liked_by, int):
+            posts4 = set([post for post in posts if [like for like in post['likes']['data'] if like['id'] == liked_by]])
+        elif isinstance(author, str):
+            posts4 = set([post for post in posts if [like for like in post['likes']['data'] if like['name'] == liked_by]])
+        else:
+            posts4 = set(posts)
+
+        if isinstance(liked_by, int):
+            posts5 = set([post for post in posts if [comm for comm in post['comments']['data'] if comm['from']['id'] == commented_by]])
+        elif isinstance(author, str):
+            posts5 = set([post for post in posts if [comm for comm in post['comments']['data'] if comm['from']['name'] == commented_by]])
+        else:
+            posts5 = set(posts)
+        
+        if intersect:
+            return posts.intersection(posts1, posts2, posts3, posts4, posts5)
+        else:
+            return posts.union(posts1, posts2, posts3, posts4, posts5)
 
 # Initialize the graph and user.
 graph = GraphAPI(access_token)
@@ -269,23 +282,53 @@ user = User(graph, user_id, True)
 # Generate a sample of posts
 posts = user.wall_sample(1000)
 
+for post in posts:
+    # If the user is the author, if the user liked it, or if the user commented, it is important.
+    if post['from'] == user.identity or user.identity in post['likes']['data'] or\
+                   [comm for comm in post['comments']['data'] if comm['from'] == user.identity]:
+        important = True
+    else:
+        important = False
+    
+    # Get the author and number of words
+    author = post['from']['id']
+    size = len(post['message'].split())
+    
+    # Find out how long since the two users last interacted.
+    if author != user.identity:
+        # For each wall, filter posts that the other person either wrote or commented on.
+        wall_me = user.wall_filter(end_time=post['created_time'],
+                                   author=author['id'],
+                                   commented_by=author['id'],
+                                   intersect=False)
+        wall_you = author.wall_filter(end_time=post['created_time'],
+                                      author=user.identity['id'],
+                                      commented_by=user.identity['id'],
+                                      intersect=False)
+        
+        # Sort and get the earliest from each.
+        wall_me = sorted(wall_me, key=operator.itemgetter('created_time'))
+        wall_you = sorted(wall_you, key=operator.itemgetter('created_time'))
+        first_me = wall_me[0]
+        first_you = wall_you[0]
+        
+        # Find which one is the earliest and calculate the time difference.
+        if first_me['created_time'] > first_you['created_time']:
+            last_post = first_me
+        else:
+            last_post = first_you
+        
+        time_diff = post['created_time'] - last_post['created_time']
+    else:
+        # The author is the user, thus the last interaction time is 0.
+        time_diff = 0
+    
+    
+    
+    
+    
+
 # Process:
-# 1) Get list of friends (me/friends)
-# 2) Get the walls of the user and all friends (<friend>/feed)
-# 3) For each post, if a dict with the user's name, id is in the 'from' key or in the 'data' key of
-#    either the 'comments' or 'likes' key, then it is important. Otherwise, unimportant.
-# 4) Get the size of the post in words
-# 5) Check the user's wall and author's wall for the last interaction
-#       * Get <friend>/feed and me/feed
-#       * Filter only posts with 'created_time' key before the test post being analyzed
-#       * For each wall go through each post:
-#           * If the friend's wall, did the user post it?
-#           * If the user's wall, did the author post it?
-#           * If the friend's wall, is a dict with user's name, id in the 'data' key of the 'comments' key?
-#           * If the user's wall, is a dict with author's name, id in the 'data' key of the 'comments' key?
-#       * Get the first post in each wall that satifies *one* of those conditions.
-#       * Compare timestamps under 'created_time' and see which was first
-#       * Calculate the time difference between this post and the post being analyzed
 # 6) Check the author's wall for all posts the user liked or commented on in past three days
 #       * Get <friend>/feed
 #       * Take result['data'] and filter only posts in past three days
