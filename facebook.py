@@ -275,12 +275,15 @@ class User:
         else:
             return posts.union(posts1, posts2, posts3, posts4, posts5)
 
+#TODO: Authenticate app and get auth token
+
 # Initialize the graph and user.
 graph = GraphAPI(access_token)
 user = User(graph, user_id, True)
 
 # Generate a sample of posts
 posts = user.wall_sample(1000)
+training_data = []
 
 for post in posts:
     # If the user is the author, if the user liked it, or if the user commented, it is important.
@@ -321,22 +324,17 @@ for post in posts:
     three_days_ago = post['created_time'] - datetime.timedelta(3)
     posts_user_liked = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, liked_by=user)
     posts_user_commented = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, commented_by=user)
-    interactions_me2you = len(posts_user_liked) + len(posts_user_commented)
+    interact_me2you = len(posts_user_liked) + len(posts_user_commented)
     
     # Find how many of the user's posts the author liked or commented on in past three days
     posts_author_liked = user.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=user, liked_by=author)
     posts_author_commented = user.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=user, commented_by=author)
-    interactions_you2me = len(posts_author_liked) + len(posts_author_commented)
+    interact_you2me = len(posts_author_liked) + len(posts_author_commented)
     
+    # Check which likes the user and author have in common
+    common_likes = user.intersect(author)
     
+    # Finally, add the data onto the training set
+    training_data.append((int(important), (size, time_diff, interact_me2you, interact_you2me, common_likes)))
 
-# Process:
-# 8) Check which likes the user and author have in common
-#       * Get me/likes and <friend>/likes
-#       * Take result['data']
-#       * Make a list of the 'id' values for each dictionary in the list
-#       * Go through the user's likes and find a correlating author's like
-#       * Count the number of common likes
-
-#TODO: Authenticate app and get auth token
-
+# TODO: Store data in encrypted container.
