@@ -230,12 +230,12 @@ class User:
         @type  time_start: datetime.datetime
         @param time_end: Only show posts before this time
         @type  time_end: datetime.datetime
-        @param author: Only show posts made by this user (name or id)
-        @type  author: C{str} or C{int}
-        @param liked_by: Only show posts made liked by this user (name or id)
-        @type  liked_by: C{str} or C{int}
-        @param commented_by: Only show posts made commented on by this user (name or id)
-        @type  commented_by: C{str} or C{int}
+        @param author: Only show posts made by this user (name and id)
+        @type  author: C{dict}
+        @param liked_by: Only show posts made liked by this user (name and id)
+        @type  liked_by: C{dict}
+        @param commented_by: Only show posts made commented on by this user (name and id)
+        @type  commented_by: C{dict}
         
         @return: List of matching posts
         @rtype: C{list}
@@ -249,24 +249,18 @@ class User:
         
         posts = set(posts)
         
-        if isinstance(author, int):
-            posts3 = set([post for post in posts if post['from']['id'] == author])
-        elif isinstance(author, str):
-            posts3 = set([post for post in posts if post['from']['name'] == author])
+        if isinstance(author, dict):
+            posts3 = set([post for post in posts if post['from'] == author])
         else:
             posts3 = set(posts)
 
-        if isinstance(liked_by, int):
-            posts4 = set([post for post in posts if [like for like in post['likes']['data'] if like['id'] == liked_by]])
-        elif isinstance(author, str):
-            posts4 = set([post for post in posts if [like for like in post['likes']['data'] if like['name'] == liked_by]])
+        if isinstance(liked_by, dict):
+            posts4 = set([post for post in posts if [like for like in post['likes']['data'] if like == liked_by]])
         else:
             posts4 = set(posts)
 
-        if isinstance(liked_by, int):
-            posts5 = set([post for post in posts if [comm for comm in post['comments']['data'] if comm['from']['id'] == commented_by]])
-        elif isinstance(author, str):
-            posts5 = set([post for post in posts if [comm for comm in post['comments']['data'] if comm['from']['name'] == commented_by]])
+        if isinstance(liked_by, dict):
+            posts5 = set([post for post in posts if [comm for comm in post['comments']['data'] if comm['from'] == commented_by]])
         else:
             posts5 = set(posts)
         
@@ -298,12 +292,12 @@ for post in posts:
     if author.identity != user.identity:
         # For each wall, filter posts that the other person either wrote or commented on.
         wall_me = user.wall_filter(end_time=post['created_time'],
-                                   author=author.identity['id'],
-                                   commented_by=author.identity['id'],
+                                   author=author.identity,
+                                   commented_by=author.identity,
                                    intersect=False)
         wall_you = author.wall_filter(end_time=post['created_time'],
-                                      author=user.identity['id'],
-                                      commented_by=user.identity.identity['id'],
+                                      author=user.identity,
+                                      commented_by=user.identity.identity,
                                       intersect=False)
         
         # Sort and get the earliest from each.
@@ -327,35 +321,28 @@ for post in posts:
     three_days_ago = ?
     posts_user_liked = author.wall_filter(start_time=three_days_ago,
                                           end_time=post['created_time'],
-                                          author=author.identity['id'],
+                                          author=author.identity,
                                           liked_by=user.identity)
     posts_user_commented = author.wall_filter(start_time=three_days_ago,
                                               end_time=post['created_time'],
-                                              author=author.identity['id'],
+                                              author=author.identity,
                                               commented_by=user.identity)
     interactions_me2you = len(posts_user_liked) + len(posts_user_commented)
     
     # Find how many of the user's posts the author liked or commented on in past three days
     posts_author_liked = user.wall_filter(start_time=three_days_ago,
                                           end_time=post['created_time'],
-                                          author=user.identity['id'],
-                                          liked_by=author.identity['id'])
+                                          author=user.identity,
+                                          liked_by=author.identity)
     posts_author_commented = user.wall_filter(start_time=three_days_ago,
                                               end_time=post['created_time'],
-                                              author=user.identity['id'],
-                                              commented_by=author.identity['id'])
+                                              author=user.identity,
+                                              commented_by=author.identity)
     interactions_you2me = len(posts_author_liked) + len(posts_author_commented)
     
     
 
 # Process:
-# 7) Check the user's wall for all posts author liked or commented on in past three day
-#       * Get me/feed
-#       * Take result['data'] and filter only posts in past three days
-#       * Filter only posts whose 'from' key has a dictionary with the name, id of user
-#       * Check the value of 'data' key under the 'likes' key and check for a dict with name, id of author
-#       * Check the value of 'data' key under the 'comments' key and check for a dict with name, id of author
-#       * Count the number of posts
 # 8) Check which likes the user and author have in common
 #       * Get me/likes and <friend>/likes
 #       * Take result['data']
