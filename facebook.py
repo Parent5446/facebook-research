@@ -30,6 +30,8 @@ Graph API. Read more about the Graph API at http://developers.facebook.com/docs/
 # https://www.facebook.com/dialog/oauth?client_id=YOUR_APP_ID&redirect_uri=parent5446.homelinux.com/facebook&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access
 
 import urllib
+import datetime
+import random
 
 # Find a JSON parser
 try:
@@ -180,6 +182,7 @@ class User:
         for post in raw_wall:
             year, month, day, hour, minute, second, tzinfo = post['created_time'].split('-T:+')
             post['created_time'] = datetime.datetime(year, month, day, hour, minute, second)
+            post['to'] = {'name': self.me['name'], 'id': user_id}
             wall.append(post)
         self.wall = wall
     
@@ -196,7 +199,23 @@ class User:
         likes2 = friend.likes
         return list(set(likes1) & set(likes2))
     
-    def filter_wall(self, time_start=False, time_end=False, author=False, liked_by=False, commented_by=False):
+    def wall_sample(self, n):
+        """
+        Generate a sample of n posts from the user's wall and the user's friends' walls.
+        
+        @param n: The number of posts to retrieve
+        @type  n: C{int}
+        @return: A list of posts
+        @rtype: C{list}
+        """
+        posts = []
+        for friend in self.friends:
+            map(posts.append, friend.wall)
+        
+        return random.sample(posts, n)
+        
+    
+    def wall_filter(self, time_start=False, time_end=False, author=False, liked_by=False, commented_by=False):
         """
         Filter the wall posts with various filters.
         
@@ -243,6 +262,12 @@ class User:
         
         return posts
 
+# Initialize the graph and user.
+graph = GraphAPI(access_token)
+user = User(graph, user_id, True)
+
+# Generate a sample of posts
+posts = user.wall_sample(1000)
 
 # Process:
 # 1) Get list of friends (me/friends)
