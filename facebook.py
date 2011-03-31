@@ -60,10 +60,23 @@ class GraphAPI(object):
     """
     
     def __init__(self, access_token=None):
+        """
+        Store the access token.
+        
+        @param access_token: The Oauth access token from Facebook
+        @type  access_token: C{Str}
+        """
         self.access_token = access_token
     
     def get_object(self, ids, **args):
-        """Fetchs the given object from the graph."""
+        """
+        Fetchs the given object from the graph.
+        
+        @param ids: An ID or a list of IDs to get
+        @type  ids: C{int} or C{list} of C{int}s
+        @return: Either the object or a list of objects
+        @rtype: mixed
+        """
         if isinstance(ids, list) or isinstance(ids, set):
             args["ids"] = ",".join(ids)
         elif not isinstance(ids, str):
@@ -71,41 +84,37 @@ class GraphAPI(object):
         return self.request(ids, args)
 
     def get_connection(self, conn_id, connection_name, **args):
-        """Fetchs the connections for given object.
+        """
+        Fetchs the connections for given object.
         
         Gets a given connection for an object. Pass the limit argument to
         set how many connections to get.
+        
+        @param conn_id: The ID of the parent object
+        @type  conn_id: C{int}
+        @param connection_name: The name of the connection to get
+        @type  connection_name: C{str}
+        @return: A list of connections
+        @rtype: C{list}
         """
         return self.request(conn_id + "/" + connection_name, args)
 
-    def put_object(self, obj_type, parent_object, message=None):
-        """Writes the given object to the graph, connected to the given parent.
-
-        Most write operations require extended permissions. For example,
-        publishing wall posts requires the "publish_stream" permission. See
-        http://developers.facebook.com/docs/authentication/ for details about
-        extended permissions.
-        """
-        assert self.access_token, "Write operations require an access token"
-        if obj_type == "comment":
-            connection_name = "comments"
-        elif obj_type == "like"
-            connection_name = "likes"
-        elif obj_type == "wall post":
-            connection_name = "feed"
-        else:
-            raise Exception('Not a common object.')
-        return self.request(parent_object + "/" + connection_name, post_args=[message])
-
-    def delete_object(self, id):
-        """Deletes the object with the given ID from the graph."""
-        self.request(id, post_args={"method": "delete"})
-
     def request(self, path, args=None, post_args=None):
-        """Fetches the given path in the Graph API.
+        """
+        Fetches the given path in the Graph API.
 
         We translate args to a valid query string. If post_args is given,
         we send a POST request to the given path with the given arguments.
+        
+        @param path: The path to the object to retrieve from the graph
+        @type  path: C{str}
+        @param args: GET arguments to append to the request
+        @type  args: C{list}
+        @param post_args: POST arguments to append to the request
+        @type  post_args: C{list}
+        
+        @return: The requested object or connection
+        @rtype: mixed
         """
         if not args: args = {}
         if self.access_token:
@@ -126,14 +135,30 @@ class GraphAPI(object):
         return response
 
 class User:
-    """A class for a Facebook user.
+    """
+    A class for a Facebook user.
     
     Stores a list of the user's wall posts, a list of friends (and IDs), and the user's likes.
     """
     
     import_fields = 'comments', 'created_time', 'from', 'likes', 'message'
+    """The keys that should be kept in wall posts
+    @type: C{tuple}"""
     
     def __init__(self, graph, user_id, recurse_friends=False):
+        """
+        Get all information about the user and process it.
+        
+        Get the user object, the user's friends, wall, and likes, remove unnecessary
+        properties, and process the wall posts.
+        
+        @param graph: A GraphAPI object
+        @type  graph: L{Graph}
+        @param user_id: ID of the user
+        @type  user_id: C{int}
+        @param recurse_friends: Whether to turn the friend list into a list of User objects
+        @type  recurse_friends: C{bool}
+        """
         # Get the user
         self.me = graph.get_object(user_id)
         
@@ -159,11 +184,41 @@ class User:
         self.wall = wall
     
     def intersect(self, friend):
+        """
+        Determine which likes the user has in common with a friend.
+        
+        @param friend: The friend to compare to
+        @type  friend: L{User}
+        @return: A list of common like IDs
+        @rtype: C{list}
+        """
         likes1 = self.likes
         likes2 = friend.likes
         return list(set(likes1) & set(likes2))
     
     def filter_wall(self, time_start=False, time_end=False, author=False, liked_by=False, commented_by=False):
+        """
+        Filter the wall posts with various filters.
+        
+        Filter the wall posts by a time interval, authors, who liked the post, who
+        commented on the post, or any combination of those filters. By default, all
+        filters are off, but by setting a value to the appropriate parameter, the
+        filter is turned on.
+        
+        @param time_start: Only show posts after this time
+        @type  time_start: datetime.datetime
+        @param time_end: Only show posts before this time
+        @type  time_end: datetime.datetime
+        @param author: Only show posts made by this user (name or id)
+        @type  author: C{str} or C{int}
+        @param liked_by: Only show posts made liked by this user (name or id)
+        @type  liked_by: C{str} or C{int}
+        @param commented_by: Only show posts made commented on by this user (name or id)
+        @type  commented_by: C{str} or C{int}
+        
+        @return: List of matching posts
+        @rtype: C{list}
+        """
         posts = self.wall
         
         if isinstance(time_start, datetime.datetime):
