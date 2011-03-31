@@ -318,7 +318,7 @@ for post in posts:
         time_diff = 0
     
     # Find how many of the author's posts the user liked or commented on in past three days
-    three_days_ago = ?
+    three_days_ago = post['created_time'] - datetime.timedelta(3)
     posts_user_liked = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, liked_by=user)
     posts_user_commented = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, commented_by=user)
     interactions_me2you = len(posts_user_liked) + len(posts_user_commented)
