@@ -168,7 +168,7 @@ class User:
         # wall and likes.
         if recurse_friends:
             self.friends = [User(friend['id']) for friend in graph.get_connection(user_id, 'friends', limit=5000)[data]]
-        else
+        else:
             self.friends = graph.get_connection(user_id, 'friends', limit=5000)[data]
         
         # Get the user's wall and likes. Filter the wall to only get the fields we need
