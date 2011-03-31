@@ -25,15 +25,6 @@
 """
 Python client library for the Facebook Platform. This client library is designed to support the
 Graph API. Read more about the Graph API at http://developers.facebook.com/docs/api.
-
-If your application is using Google AppEngine's webapp framework, your
-usage of this module might look like this:
-
-    user = facebook.get_user_from_cookie(self.request.cookies, key, secret)
-    if user:
-        graph = facebook.GraphAPI(user["access_token"])
-        profile = graph.get_object("me")
-        friends = graph.get_connections("me", "friends")
 """
 
 # https://www.facebook.com/dialog/oauth?client_id=YOUR_APP_ID&redirect_uri=parent5446.homelinux.com/facebook&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access
@@ -155,14 +146,47 @@ class User:
         
         # Get the user's wall and likes. Filter the wall to only get the fields we need
         # and only keep the IDs from the likes
-        self.wall = [dict([(key, value) for key, value in post if key in self.import_fields])
+        raw_wall = [dict([(key, value) for key, value in post if key in self.import_fields])
                      for post in graph.get_connection(user_id, 'feed', limit=500)[data]]
         self.likes = [like['id'] for like in graph.get_connection(user_id, 'likes')[data]]
+        
+        # Convert created_time into datetime
+        wall = []
+        for post in raw_wall:
+            year, month, day, hour, minute, second, tzinfo = post['created_time'].split('-T:+')
+            post['created_time'] = datetime.datetime(year, month, day, hour, minute, second)
+            wall.append(post)
+        self.wall = wall
     
     def intersect(self, friend):
         likes1 = self.likes
         likes2 = friend.likes
         return list(set(likes1) & set(likes2))
+    
+    def filter_wall(self, time_start=False, time_end=False, author=False, liked_by=False, commented_by=False):
+        posts = self.wall
+        
+        if isinstance(time_start, datetime.datetime):
+            posts = [post for post in posts if post['created_time'] > time_start]
+        if isinstance(time_end, datetime.datetime):
+            posts = [post for post in posts if post['created_time'] < time_end]
+        
+        if isinstance(author, int):
+            posts = [post for post in posts if post['from']['id'] == author]
+        elif isinstance(author, str):
+            posts = [post for post in posts if post['from']['name'] == author]
+
+        if isinstance(liked_by, int):
+            posts = [post for post in posts if [like for like in post['likes']['data'] if like['id'] == liked_by]]
+        elif isinstance(author, str):
+            posts = [post for post in posts if [like for like in post['likes']['data'] if like['name'] == liked_by]]
+
+        if isinstance(liked_by, int):
+            posts = [post for post in posts if [comm for comm in post['comments']['data'] if comm['from']['id'] == commented_by]]
+        elif isinstance(author, str):
+            posts = [post for post in posts if [comm for comm in post['comments']['data'] if comm['from']['name'] == commented_by]]
+        
+        return posts
 
 
 # Process:
