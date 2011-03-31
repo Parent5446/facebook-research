@@ -188,6 +188,12 @@ class User:
         
         self.identity = {'name': self.me['name'], 'id': user_id}
     
+    def __repr__(self):
+        """
+        Stringify the user by returning the name and ID.
+        """
+        return self.identity
+    
     def intersect(self, friend):
         """
         Determine which likes the user has in common with a friend.
@@ -250,17 +256,17 @@ class User:
         posts = set(posts)
         
         if isinstance(author, dict):
-            posts3 = set([post for post in posts if post['from'] == author])
+            posts3 = set([post for post in posts if post['from'] == repr(author)])
         else:
             posts3 = set(posts)
 
         if isinstance(liked_by, dict):
-            posts4 = set([post for post in posts if [like for like in post['likes']['data'] if like == liked_by]])
+            posts4 = set([post for post in posts if [like for like in post['likes']['data'] if like == repr(liked_by)]])
         else:
             posts4 = set(posts)
 
         if isinstance(liked_by, dict):
-            posts5 = set([post for post in posts if [comm for comm in post['comments']['data'] if comm['from'] == commented_by]])
+            posts5 = set([post for post in posts if [comm for comm in post['comments']['data'] if comm['from'] == repr(commented_by)]])
         else:
             posts5 = set(posts)
         
@@ -292,12 +298,12 @@ for post in posts:
     if author.identity != user.identity:
         # For each wall, filter posts that the other person either wrote or commented on.
         wall_me = user.wall_filter(end_time=post['created_time'],
-                                   author=author.identity,
-                                   commented_by=author.identity,
+                                   author=author,
+                                   commented_by=author,
                                    intersect=False)
         wall_you = author.wall_filter(end_time=post['created_time'],
-                                      author=user.identity,
-                                      commented_by=user.identity.identity,
+                                      author=user,
+                                      commented_by=user,
                                       intersect=False)
         
         # Sort and get the earliest from each.
@@ -321,23 +327,23 @@ for post in posts:
     three_days_ago = ?
     posts_user_liked = author.wall_filter(start_time=three_days_ago,
                                           end_time=post['created_time'],
-                                          author=author.identity,
-                                          liked_by=user.identity)
+                                          author=author,
+                                          liked_by=user)
     posts_user_commented = author.wall_filter(start_time=three_days_ago,
                                               end_time=post['created_time'],
-                                              author=author.identity,
-                                              commented_by=user.identity)
+                                              author=author,
+                                              commented_by=user)
     interactions_me2you = len(posts_user_liked) + len(posts_user_commented)
     
     # Find how many of the user's posts the author liked or commented on in past three days
     posts_author_liked = user.wall_filter(start_time=three_days_ago,
                                           end_time=post['created_time'],
-                                          author=user.identity,
-                                          liked_by=author.identity)
+                                          author=user,
+                                          liked_by=author)
     posts_author_commented = user.wall_filter(start_time=three_days_ago,
                                               end_time=post['created_time'],
-                                              author=user.identity,
-                                              commented_by=author.identity)
+                                              author=user,
+                                              commented_by=author)
     interactions_you2me = len(posts_author_liked) + len(posts_author_commented)
     
     
