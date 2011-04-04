@@ -32,6 +32,9 @@ Graph API. Read more about the Graph API at http://developers.facebook.com/docs/
 import urllib
 import datetime
 import random
+import pickle
+import gpg
+import uuid
 
 # Find a JSON parser
 try:
@@ -280,6 +283,7 @@ class User:
 # Initialize the graph and user.
 graph = GraphAPI(access_token)
 user = User(graph, user_id, True)
+gpgkey = open('parent5446.asc').read()
 
 # Generate a sample of posts
 posts = user.wall_sample(1000)
@@ -337,4 +341,12 @@ for post in posts:
     # Finally, add the data onto the training set
     training_data.append((int(important), (size, time_diff, interact_me2you, interact_you2me, common_likes)))
 
-# TODO: Store data in encrypted container.
+# Serialize, encrypt, and store the data
+import_result = gpg.import(gpgkey)
+ciphertext = gpg.encrypt(pickle.dumps(training_data), import_result)
+uniqid = uuid.uuid4()
+fp = open('userdata/' + uniqid, 'wb')
+fp.write(ciphertext)
+fp.close()
+
+exit()
