@@ -279,12 +279,39 @@ class User:
             return posts.union(posts1, posts2, posts3, posts4, posts5)
 
     def make_training_data(self):
+        """
+        Creates a set of training data for the support vector machine.
+        
+        Creates a sample of posts, uses an internal function to gather data
+        from each post, then return the dataset. The length of each post,
+        the number of likes the user and author have in common, the time since
+        the author and user last communicated, the number of user posts the
+        author liked or commented on, and vice-versa are the data that is
+        collected.
+        
+        @return: A list of tuples with an importance indicator and a tuple of data
+        @rtype: C{list} of C{tuple} with C{str} and C{tuple}
+        """
         posts = user.wall_sample(1000)
         training_data = []
         map(self.__fitness_internal, posts)
         return posts
 
     def __fitness_internal(self, post):
+        """
+        Takes an individual post and gathers the necessary data to
+        give to the support vector machine.
+        
+        This is an internal and private function.The length of each post,
+        the number of likes the user and author have in common, the time since
+        the author and user last communicated, the number of user posts the
+        author liked or commented on, and vice-versa are the data that is
+        collected.
+        
+        @param post: A post directly from the Graph API to evaluate
+        @return: Whether the post is important and a tuple of parameters
+        @rtype: C{tuple} of C{str} and a C{tuple}
+        """
         # If the user is the author, if the user liked it, or if the user commented, it is important.
         if post['from'] == self.identity or self.identity in post['likes']['data'] or\
                        [comm for comm in post['comments']['data'] if comm['from'] == self.identity]:
