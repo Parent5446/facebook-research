@@ -278,6 +278,65 @@ class User:
         else:
             return posts.union(posts1, posts2, posts3, posts4, posts5)
 
+    def make_training_data(self):
+        posts = user.wall_sample(1000)
+        training_data = []
+        map(self.__fitness_internal, posts)
+        return posts
+
+    def __fitness_internal(self, post):
+        # If the user is the author, if the user liked it, or if the user commented, it is important.
+        if post['from'] == self.identity or self.identity in post['likes']['data'] or\
+                       [comm for comm in post['comments']['data'] if comm['from'] == self.identity]:
+            important = True
+        else:
+            important = False
+    
+        # Get the author and number of words
+        author = User(graph, post['from']['id'])
+        size = len(post['message'].split())
+    
+        # Find out how long since the two users last interacted.
+        if author.identity != self.identity:
+            # For each wall, filter posts that the other person either wrote or commented on.
+            wall_me = self.wall_filter(end_time=post['created_time'], author=author, commented_by=author, intersect=False)
+            wall_you = author.wall_filter(end_time=post['created_time'], author=self, commented_by=self, intersect=False)
+        
+            # Sort and get the earliest from each.
+            wall_me = sorted(wall_me, key=operator.itemgetter('created_time'))
+            wall_you = sorted(wall_you, key=operator.itemgetter('created_time'))
+            first_me = wall_me[0]
+            first_you = wall_you[0]
+        
+            # Find which one is the earliest and calculate the time difference.
+            if first_me['created_time'] > first_you['created_time']:
+                last_post = first_me
+            else:
+                last_post = first_you
+        
+            time_diff = post['created_time'] - last_post['created_time']
+        else:
+            # The author is the user, thus the last interaction time is 0.
+            time_diff = 0
+    
+        # Find how many of the author's posts the user liked or commented on in past three days
+        three_days_ago = post['created_time'] - datetime.timedelta(3)
+        posts_user_liked = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, liked_by=self)
+        posts_user_commented = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, commented_by=self)
+        interact_me2you = len(posts_user_liked) + len(posts_user_commented)
+    
+        # Find how many of the user's posts the author liked or commented on in past three days
+        posts_author_liked = self.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=user, liked_by=author)
+        posts_author_commented = self.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=user, commented_by=author)
+        interact_you2me = len(posts_author_liked) + len(posts_author_commented)
+    
+        # Check which likes the user and author have in common
+        common_likes = self.intersect(author)
+    
+        # Finally, add the data onto the training set
+        return int(important), (size, time_diff, interact_me2you, interact_you2me, common_likes)
+
+
 #TODO: Authenticate app and get auth token
 
 # Initialize the graph and user.
@@ -285,65 +344,12 @@ graph = GraphAPI(access_token)
 user = User(graph, user_id, True)
 gpgkey = open('parent5446.asc').read()
 
-# Generate a sample of posts
-posts = user.wall_sample(1000)
-training_data = []
-
-for post in posts:
-    # If the user is the author, if the user liked it, or if the user commented, it is important.
-    if post['from'] == user.identity or user.identity in post['likes']['data'] or\
-                   [comm for comm in post['comments']['data'] if comm['from'] == user.identity]:
-        important = True
-    else:
-        important = False
-    
-    # Get the author and number of words
-    author = User(graph, post['from']['id'])
-    size = len(post['message'].split())
-    
-    # Find out how long since the two users last interacted.
-    if author.identity != user.identity:
-        # For each wall, filter posts that the other person either wrote or commented on.
-        wall_me = user.wall_filter(end_time=post['created_time'], author=author, commented_by=author, intersect=False)
-        wall_you = author.wall_filter(end_time=post['created_time'], author=user, commented_by=user, intersect=False)
-        
-        # Sort and get the earliest from each.
-        wall_me = sorted(wall_me, key=operator.itemgetter('created_time'))
-        wall_you = sorted(wall_you, key=operator.itemgetter('created_time'))
-        first_me = wall_me[0]
-        first_you = wall_you[0]
-        
-        # Find which one is the earliest and calculate the time difference.
-        if first_me['created_time'] > first_you['created_time']:
-            last_post = first_me
-        else:
-            last_post = first_you
-        
-        time_diff = post['created_time'] - last_post['created_time']
-    else:
-        # The author is the user, thus the last interaction time is 0.
-        time_diff = 0
-    
-    # Find how many of the author's posts the user liked or commented on in past three days
-    three_days_ago = post['created_time'] - datetime.timedelta(3)
-    posts_user_liked = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, liked_by=user)
-    posts_user_commented = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, commented_by=user)
-    interact_me2you = len(posts_user_liked) + len(posts_user_commented)
-    
-    # Find how many of the user's posts the author liked or commented on in past three days
-    posts_author_liked = user.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=user, liked_by=author)
-    posts_author_commented = user.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=user, commented_by=author)
-    interact_you2me = len(posts_author_liked) + len(posts_author_commented)
-    
-    # Check which likes the user and author have in common
-    common_likes = user.intersect(author)
-    
-    # Finally, add the data onto the training set
-    training_data.append((int(important), (size, time_diff, interact_me2you, interact_you2me, common_likes)))
+# Create the training data
+dataset = User.make_training_data()
 
 # Serialize, encrypt, and store the data
 import_result = gpg.import(gpgkey)
-ciphertext = gpg.encrypt(pickle.dumps(training_data), import_result)
+ciphertext = gpg.encrypt(pickle.dumps(dataset), import_result)
 uniqid = uuid.uuid4()
 fp = open('userdata/' + uniqid, 'wb')
 fp.write(ciphertext)
