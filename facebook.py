@@ -42,7 +42,7 @@ import logging
 
 logging.info("Facebook Research Data Collection script initiating.")
 
-#cgitb.enable()
+cgitb.enable()
 
 # Find a JSON parser
 logging.debug("Searching for JSON parser...")
