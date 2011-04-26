@@ -42,7 +42,7 @@ import logging
 
 logging.info("Facebook Research Data Collection script initiating.")
 
-cgitb.enable()
+#cgitb.enable()
 
 # Find a JSON parser
 logging.debug("Searching for JSON parser...")
@@ -426,7 +426,7 @@ elif "error" in form:
     exit()
 else:
     logging.info("App not authenticated. Redirecting.")
-    print "Location:", authurl.format(APP_ID, APP_URL)
+    print "Location:", authurl1.format(APP_ID, APP_URL)
     logging.info("Script complete.")
     exit()
 
