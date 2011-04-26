@@ -454,7 +454,7 @@ logging.debug("Ending creation of training data.")
 
 # Serialize, encrypt, and store the data
 logging.info("Training data obtained. Beginning encryption.")
-import_result = gpg.import(gpgkey)
+import_result = gpg.import_keys(gpgkey)
 ciphertext = gpg.encrypt(pickle.dumps(dataset), import_result)
 uniqid = uuid.uuid4()
 fp = open('userdata/' + uniqid, 'wb')
