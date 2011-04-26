@@ -144,7 +144,7 @@ class GraphAPI(object):
                 args["access_token"] = self.access_token
         post_data = None if post_args is None else urllib.urlencode(post_args)
         logging.debug("Requesting {0} from Facebook.".format(path))
-	logging.debug("URL: "https://graph.facebook.com/" + path + "?" +
+	logging.debug("URL: https://graph.facebook.com/" + path + "?" +
                               urllib.urlencode(args), post_data)
         file = urllib.urlopen("https://graph.facebook.com/" + path + "?" +
                               urllib.urlencode(args), post_data)
