@@ -302,17 +302,17 @@ class User:
         
         posts = set(posts)
         
-        if isinstance(author, dict):
+        if isinstance(author, User):
             posts3 = set([post for post in posts if post['from'] == repr(author)])
         else:
             posts3 = set(posts)
 
-        if isinstance(liked_by, dict):
+        if isinstance(liked_by, User):
             posts4 = set([post for post in posts if [like for like in post['likes']['data'] if like == repr(liked_by)]])
         else:
             posts4 = set(posts)
 
-        if isinstance(liked_by, dict):
+        if isinstance(liked_by, User):
             posts5 = set([post for post in posts if [comm for comm in post['comments']['data'] if comm['from'] == repr(commented_by)]])
         else:
             posts5 = set(posts)
