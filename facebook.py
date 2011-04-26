@@ -373,10 +373,12 @@ authurl = "https://www.facebook.com/dialog/oauth?client_id=YOUR_APP_ID&redirect_
 if "code" not in form:
     print "HTTP/1.1 302 Found"
     print "Location:", authurl
+    exit()
 else:
     print "HTTP/1.1 200 OK\r\n"
     print "Content-Type: text/html"
     print
+    access_token = form['code'].value
 
 # Initialize the graph and user.
 graph = GraphAPI(access_token)
