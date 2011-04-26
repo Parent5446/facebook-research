@@ -445,7 +445,7 @@ logging.info("Access token obtained: {0}".format(access_token))
 # Initialize the graph and user.
 logging.debug("Loading Graph API and User objects.")
 graph = GraphAPI(access_token)
-user = User(graph, user_id, True)
+user = User(graph, "me", True)
 gpg = gnupg.GPG(gnupghome=GPG_HOME)
 gpgkey = open('parent5446.asc').read()
 
