@@ -119,7 +119,7 @@ class GraphAPI(object):
         """
         return self.request(conn_id + "/" + connection_name, args)
 
-    def request(self, path, args=None, post_args=None):
+    def request(self, path, args=None):
         """
         Fetches the given path in the Graph API.
 
@@ -130,24 +130,16 @@ class GraphAPI(object):
         @type  path: C{str}
         @param args: GET arguments to append to the request
         @type  args: C{list}
-        @param post_args: POST arguments to append to the request
-        @type  post_args: C{list}
         
         @return: The requested object or connection
         @rtype: mixed
         """
         if not args: args = {}
         if self.access_token:
-            if post_args is not None:
-                post_args["access_token"] = self.access_token
-            else:
-                args["access_token"] = self.access_token
-        post_data = None if post_args is None else urllib.urlencode(post_args)
+            args["access_token"] = self.access_token
         logging.debug("Requesting {0} from Facebook.".format(path))
-	logging.debug("URL: https://graph.facebook.com/" + path + "?" +
-                              urllib.urlencode(args), post_data)
-        file = urllib.urlopen("https://graph.facebook.com/" + path + "?" +
-                              urllib.urlencode(args), post_data)
+	logging.debug("URL: https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
+        file = urllib.urlopen("https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
         try:
             response = _parse_json(file.read())
         finally:
