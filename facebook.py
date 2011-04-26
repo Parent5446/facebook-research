@@ -27,7 +27,7 @@ Python client library for the Facebook Platform. This client library is designed
 Graph API. Read more about the Graph API at http://developers.facebook.com/docs/api.
 """
 
-APP_ID, APP_URL, APP_SECRET, GPG_HOME = "", "", "", ""
+APP_ID, APP_URL, APP_SECRET, GPG_HOME = "126673707408216", "http://parent5446.whizkidztech.com/facebook/", "c75102380655cb8dffafc9ac842d735a", "/home/parent5446"
 
 import urllib
 import httplib
@@ -438,7 +438,7 @@ authconn = httplib.HTTPSConnection('graph.facebook.com')
 authurl2 = '/oauth/access_token?client_id={0}&redirect_uri={1}&client_secret={2}&code={3}'
 logging.debug("Requesting access token from Facebook.")
 authconn.request('GET', authurl2.format(APP_ID, APP_URL, APP_SECRET, code))
-response = cgi.parse(conn.getresponse())
+response = cgi.parse(authconn.getresponse())
 access_token = response['access_token']
 logging.info("Access token obtained: {0}".format(access_token))
 
