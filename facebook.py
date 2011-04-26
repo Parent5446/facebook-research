@@ -99,6 +99,7 @@ class GraphAPI(object):
         if isinstance(ids, list) or isinstance(ids, set):
             args["ids"] = ",".join(ids)
         elif not isinstance(ids, str):
+            logging.error("Invalid object ID type passed to graph API.")
             raise Exception("Invalid id type.")
         return self.request(ids, args)
 
@@ -142,6 +143,7 @@ class GraphAPI(object):
             else:
                 args["access_token"] = self.access_token
         post_data = None if post_args is None else urllib.urlencode(post_args)
+        logging.debug("Requesting {0} from Facebook.".format(path))
         file = urllib.urlopen("https://graph.facebook.com/" + path + "?" +
                               urllib.urlencode(args), post_data)
         try:
@@ -149,8 +151,9 @@ class GraphAPI(object):
         finally:
             file.close()
         if response.get("error"):
-            raise Exception(response["error"]["type"],
-                            response["error"]["message"])
+            logging.debug("Error received from Facebook: {0}".format(response["error"]["message"]))
+            logging.error("Failed to retrieve {0} from Facebook.".format(path))
+            raise Exception(response["error"]["type"], response["error"]["message"])
         return response
 
 class User:
