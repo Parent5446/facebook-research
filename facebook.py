@@ -27,14 +27,14 @@ Python client library for the Facebook Platform. This client library is designed
 Graph API. Read more about the Graph API at http://developers.facebook.com/docs/api.
 """
 
-APP_ID, APP_URL, APP_SECRET = "", "", ""
+APP_ID, APP_URL, APP_SECRET, GPG_HOME = "", "", "", ""
 
 import urllib
 import httplib
 import datetime
 import random
 import pickle
-import gpg
+import gnupg
 import uuid
 import cgi
 import cgitb
@@ -445,6 +445,7 @@ logging.info("Access token obtained: {0}".format(access_token))
 logging.debug("Loading Graph API and User objects.")
 graph = GraphAPI(access_token)
 user = User(graph, user_id, True)
+gpg = gnupg.GPG(gnupghome=GPG_HOME)
 gpgkey = open('parent5446.asc').read()
 
 # Create the training data
