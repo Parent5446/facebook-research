@@ -436,7 +436,7 @@ logging.debug("Opening HTTPS connection with Facebook.")
 authconn = httplib.HTTPSConnection('graph.facebook.com')
 authurl2 = '/oauth/access_token?client_id={0}&redirect_uri={1}&client_secret={2}&code={3}'
 logging.debug("Requesting access token from Facebook.")
-authconn.request('GET', authurl2.format(APP_ID, APP_URL, APP_SECRET, code)
+authconn.request('GET', authurl2.format(APP_ID, APP_URL, APP_SECRET, code))
 response = cgi.parse(conn.getresponse())
 access_token = response['access_token']
 logging.info("Access token obtained: {0}".format(access_token))
