@@ -370,15 +370,22 @@ form = cgi.FieldStorage()
 authurl = "https://www.facebook.com/dialog/oauth?client_id=YOUR_APP_ID&redirect_uri=parent5446.whizkidztech.com/facebook&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access"
 
 # Intitiate the session
-if "code" not in form:
-    print "HTTP/1.1 302 Found"
-    print "Location:", authurl
-    exit()
-else:
+if "code" in form:
     print "HTTP/1.1 200 OK\r\n"
     print "Content-Type: text/html"
     print
     access_token = form['code'].value
+elif "error" in form:
+    print "HTTP/1.1 200 OK\r\n"
+    print "Content-Type: text/plain"
+    print
+    print "Authentication denied because", form['error_reason']
+    exit()
+else:
+    print "HTTP/1.1 302 Found"
+    print "Location:", authurl
+    exit()
+
 
 # Initialize the graph and user.
 graph = GraphAPI(access_token)
