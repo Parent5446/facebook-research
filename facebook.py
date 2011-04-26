@@ -181,23 +181,29 @@ class User:
         @param recurse_friends: Whether to turn the friend list into a list of User objects
         @type  recurse_friends: C{bool}
         """
+        logging.info("Retrieving data about user {0}.".format(user_id))
         # Get the user
         self.me = graph.get_object(user_id)
         
         # If recurse_friends, make a user object for each friend, which in turn gets their
         # wall and likes.
         if recurse_friends:
+            logging.info("Retrieving friend data from user {0}.".format(user_id))
             self.friends = [User(friend['id']) for friend in graph.get_connection(user_id, 'friends', limit=5000)[data]]
         else:
+            logging.debug("Getting friend list from user {0}.".format(user_id))
             self.friends = graph.get_connection(user_id, 'friends', limit=5000)[data]
         
         # Get the user's wall and likes. Filter the wall to only get the fields we need
         # and only keep the IDs from the likes
+        logging.debug("Getting wall data from user {0}.".format(user_id))
         raw_wall = [dict([(key, value) for key, value in post if key in self.import_fields])
                      for post in graph.get_connection(user_id, 'feed', limit=500)[data]]
+        logging.debug("Getting likes and activities from user {0}.".format(user_id))
         self.likes = [like['id'] for like in graph.get_connection(user_id, 'likes')[data]]
         
         # Convert created_time into datetime
+        logging.debug("Processing wall posts from user {0}.".format(user_id))
         wall = []
         for post in raw_wall:
             year, month, day, hour, minute, second, tzinfo = post['created_time'].split('-T:+')
@@ -223,6 +229,7 @@ class User:
         @return: A list of common like IDs
         @rtype: C{list}
         """
+        logging.debug("Creating likes intersect with user {0} and {1}.".format(repr(self)['id'], repr(friend)['id']))
         likes1 = self.likes
         likes2 = friend.likes
         return list(set(likes1) & set(likes2))
@@ -236,6 +243,7 @@ class User:
         @return: A list of posts
         @rtype: C{list}
         """
+        logging.debug("Generating {0} post wall sample for user {0}.".format(n, repr(self)['id']))
         posts = []
         for friend in self.friends:
             map(posts.append, friend.wall)
@@ -266,6 +274,25 @@ class User:
         @return: List of matching posts
         @rtype: C{list}
         """
+        # Make user-readable log entry representing this filter.
+        logging_string = "Filter wall posts from user {0} for posts with ".format(repr(self)['id'])
+        if intersect:
+            logging_string += "all:"
+        else:
+            logging_string += "any:"
+        if time_start:
+            logging_string += " after " + str(time_start) + ";"
+        if time_end:
+            logging_string += " before " + str(time_end) + ";"
+        if author:
+            logging_string += " posted by " + repr(author)['id'] + ";"
+        if liked_by:
+            logging_string += " liked by " + repr(liked_by)['id'] + ";"
+        if commented_by:
+            logging_string += " commented by " + repr(commented_by)['id'] + ";"
+        logging.debug(logging_string)
+        
+        # Start filtering
         posts = self.wall
             
         if isinstance(time_start, datetime.datetime):
