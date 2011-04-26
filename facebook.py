@@ -427,6 +427,7 @@ elif "error" in form:
 else:
     logging.info("App not authenticated. Redirecting.")
     print "Location:", authurl1.format(APP_ID, APP_URL)
+    print
     logging.info("Script complete.")
     exit()
 
