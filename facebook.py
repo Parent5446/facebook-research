@@ -39,6 +39,8 @@ import uuid
 import cgi
 import cgitb
 
+cgitb.enable()
+
 # Find a JSON parser
 try:
     import json
@@ -365,8 +367,6 @@ class User:
     
         # Finally, add the data onto the training set
         return int(important), (size, time_diff, interact_me2you, interact_you2me, common_likes)
-
-cgitb.enable()
 
 # Get POST variables
 form = cgi.FieldStorage()
