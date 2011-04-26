@@ -27,14 +27,14 @@ Python client library for the Facebook Platform. This client library is designed
 Graph API. Read more about the Graph API at http://developers.facebook.com/docs/api.
 """
 
-# https://www.facebook.com/dialog/oauth?client_id=YOUR_APP_ID&redirect_uri=parent5446.homelinux.com/facebook&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access
-
 import urllib
 import datetime
 import random
 import pickle
 import gpg
 import uuid
+import cgi
+import cgitb
 
 # Find a JSON parser
 try:
@@ -363,8 +363,20 @@ class User:
         # Finally, add the data onto the training set
         return int(important), (size, time_diff, interact_me2you, interact_you2me, common_likes)
 
+cgitb.enable()
 
-#TODO: Authenticate app and get auth token
+# Get POST variables
+form = cgi.FieldStorage()
+authurl = "https://www.facebook.com/dialog/oauth?client_id=YOUR_APP_ID&redirect_uri=parent5446.whizkidztech.com/facebook&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access"
+
+# Intitiate the session
+if "code" not in form:
+    print "HTTP/1.1 302 Found"
+    print "Location:", authurl
+else:
+    print "HTTP/1.1 200 OK\r\n"
+    print "Content-Type: text/html"
+    print
 
 # Initialize the graph and user.
 graph = GraphAPI(access_token)
