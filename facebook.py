@@ -30,6 +30,7 @@ Graph API. Read more about the Graph API at http://developers.facebook.com/docs/
 APP_ID, APP_URL, APP_SECRET = "", "", ""
 
 import urllib
+import httplib
 import datetime
 import random
 import pickle
@@ -373,17 +374,14 @@ authurl1 = "https://www.facebook.com/dialog/oauth?client_id={0}&redirect_uri={1}
 
 # Intitiate the session
 if "code" in form:
-    print "HTTP/1.1 200 OK\r\n"
     print "Content-Type: text/html"
     print
 elif "error" in form:
-    print "HTTP/1.1 200 OK\r\n"
     print "Content-Type: text/plain"
     print
     print "Authentication denied because", form['error_reason']
     exit()
 else:
-    print "HTTP/1.1 302 Found"
     print "Location:", authurl.format(APP_ID, APP_URL)
     exit()
 
