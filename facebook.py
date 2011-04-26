@@ -144,6 +144,8 @@ class GraphAPI(object):
                 args["access_token"] = self.access_token
         post_data = None if post_args is None else urllib.urlencode(post_args)
         logging.debug("Requesting {0} from Facebook.".format(path))
+	logging.debug("URL: "https://graph.facebook.com/" + path + "?" +
+                              urllib.urlencode(args), post_data)
         file = urllib.urlopen("https://graph.facebook.com/" + path + "?" +
                               urllib.urlencode(args), post_data)
         try:
@@ -439,7 +441,7 @@ authurl2 = '/oauth/access_token?client_id={0}&redirect_uri={1}&client_secret={2}
 logging.debug("Requesting access token from Facebook.")
 authconn.request('GET', authurl2.format(APP_ID, APP_URL, APP_SECRET, code))
 response = cgi.parse(authconn.getresponse())
-access_token = response['code']
+access_token = response['code'][0]
 logging.info("Access token obtained: {0}".format(access_token))
 
 # Initialize the graph and user.
