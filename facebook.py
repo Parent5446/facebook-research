@@ -367,14 +367,13 @@ cgitb.enable()
 
 # Get POST variables
 form = cgi.FieldStorage()
-authurl = "https://www.facebook.com/dialog/oauth?client_id=YOUR_APP_ID&redirect_uri=parent5446.whizkidztech.com/facebook&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access"
+authurl1 = "https://www.facebook.com/dialog/oauth?client_id={0}&redirect_uri={1}&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access"
 
 # Intitiate the session
 if "code" in form:
     print "HTTP/1.1 200 OK\r\n"
     print "Content-Type: text/html"
     print
-    access_token = form['code'].value
 elif "error" in form:
     print "HTTP/1.1 200 OK\r\n"
     print "Content-Type: text/plain"
@@ -383,9 +382,16 @@ elif "error" in form:
     exit()
 else:
     print "HTTP/1.1 302 Found"
-    print "Location:", authurl
+    print "Location:", authurl.format(APP_ID, APP_URL)
     exit()
 
+# Get access token
+code = form['code'].value
+authconn = httplib.HTTPSConnection('graph.facebook.com')
+authurl2 = '/oauth/access_token?client_id={0}&redirect_uri={1}&client_secret={2}&code={3}'
+authconn.request('GET', authurl2.format(APP_ID, APP_URL, APP_SECRET, code)
+response = cgi.parse(conn.getresponse())
+access_token = response['access_token']
 
 # Initialize the graph and user.
 graph = GraphAPI(access_token)
