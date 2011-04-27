@@ -187,7 +187,7 @@ class User:
             self.friends = [User(graph, friend['id'], 0) for friend in graph.get_connection(user_id, 'friends', limit=5000)['data']]
         elif friend_data == 1:
             logging.debug("Getting friend list from user {0}.".format(user_id))
-            self.friends = graph.get_connection(user_id, 'friends', limit=5000)[data]
+            self.friends = graph.get_connection(user_id, 'friends', limit=5000)['data']
         else:
             self.friends = []
         
@@ -195,9 +195,9 @@ class User:
         # and only keep the IDs from the likes
         logging.debug("Getting wall data from user {0}.".format(user_id))
         raw_wall = [dict([(key, value) for key, value in post if key in self.import_fields])
-                     for post in graph.get_connection(user_id, 'feed', limit=500)[data]]
+                     for post in graph.get_connection(user_id, 'feed', limit=500)['data']]
         logging.debug("Getting likes and activities from user {0}.".format(user_id))
-        self.likes = [like['id'] for like in graph.get_connection(user_id, 'likes')[data]]
+        self.likes = [like['id'] for like in graph.get_connection(user_id, 'likes')['data']]
         
         # Convert created_time into datetime
         logging.debug("Processing wall posts from user {0}.".format(user_id))
