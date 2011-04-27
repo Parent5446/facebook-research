@@ -194,7 +194,7 @@ class User:
         # Get the user's wall and likes. Filter the wall to only get the fields we need
         # and only keep the IDs from the likes
         logging.debug("Getting wall data from user {0}.".format(user_id))
-        raw_wall = [dict([(key, value) for key, value in post if key in self.import_fields])
+        raw_wall = [dict([(key, value) for key, value in post.iteritems() if key in self.import_fields])
                      for post in graph.get_connection(user_id, 'feed', limit=500)['data']]
         logging.debug("Getting likes and activities from user {0}.".format(user_id))
         self.likes = [like['id'] for like in graph.get_connection(user_id, 'likes')['data']]
