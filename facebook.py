@@ -162,7 +162,7 @@ class User:
     """The keys that should be kept in wall posts
     @type: C{tuple}"""
     
-    def __init__(self, graph, user_id, recurse_friends=False):
+    def __init__(self, graph, user_id, friend_data=1):
         """
         Get all information about the user and process it.
         
@@ -173,8 +173,8 @@ class User:
         @type  graph: L{Graph}
         @param user_id: ID of the user
         @type  user_id: C{int}
-        @param recurse_friends: Whether to turn the friend list into a list of User objects
-        @type  recurse_friends: C{bool}
+        @param friend_data: 0 to ignore friends, 1 to get friend list, and 2 to recurse friends
+        @type  friend_data: C{int}
         """
         logging.info("Retrieving data about user {0}.".format(user_id))
         # Get the user
@@ -182,12 +182,14 @@ class User:
         
         # If recurse_friends, make a user object for each friend, which in turn gets their
         # wall and likes.
-        if recurse_friends:
+        if friend_data == 2:
             logging.info("Retrieving friend data from user {0}.".format(user_id))
-            self.friends = [User(graph, friend['id']) for friend in graph.get_connection(user_id, 'friends', limit=5000)['data']]
-        else:
+            self.friends = [User(graph, friend['id'], 0) for friend in graph.get_connection(user_id, 'friends', limit=5000)['data']]
+        elif friend_data == 1:
             logging.debug("Getting friend list from user {0}.".format(user_id))
             self.friends = graph.get_connection(user_id, 'friends', limit=5000)[data]
+        else:
+            self.friends = []
         
         # Get the user's wall and likes. Filter the wall to only get the fields we need
         # and only keep the IDs from the likes
@@ -440,7 +442,7 @@ logging.info("Access token obtained: {0}".format(access_token))
 # Initialize the graph and user.
 logging.debug("Loading Graph API and User objects.")
 graph = GraphAPI(access_token)
-user = User(graph, "me", True)
+user = User(graph, "me", 2)
 gpg = gnupg.GPG(gnupghome=GPG_HOME)
 gpgkey = open('parent5446.asc').read()
 
