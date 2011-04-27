@@ -184,7 +184,7 @@ class User:
         # wall and likes.
         if recurse_friends:
             logging.info("Retrieving friend data from user {0}.".format(user_id))
-            self.friends = [User(friend['id']) for friend in graph.get_connection(user_id, 'friends', limit=5000)[data]]
+            self.friends = [User(graph, friend['id']) for friend in graph.get_connection(user_id, 'friends', limit=5000)['data']]
         else:
             logging.debug("Getting friend list from user {0}.".format(user_id))
             self.friends = graph.get_connection(user_id, 'friends', limit=5000)[data]
