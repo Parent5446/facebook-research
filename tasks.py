@@ -26,6 +26,7 @@
 Python client library for the Facebook Platform. This client library is designed to support the
 Graph API. Read more about the Graph API at http://developers.facebook.com/docs/api.
 """
+from celery.task import task
 
 @task
 def gather_data():
