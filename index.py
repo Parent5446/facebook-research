@@ -34,6 +34,7 @@ import cgitb
 import httplib
 import logging
 import urlparse
+import tasks
 #from celery.task import task
 
 logging.info("Facebook Research Data Collection script initiating.")
@@ -78,35 +79,4 @@ logging.info("Access token obtained: {0}".format(access_token))
 # Authentication data has been gathered. All further steps can be
 # put into a task and set of asynchronously.
 
-@task
-def gather_data():
-    # Import modules needed by task
-    import gnupg
-    import logging
-    import uuid
-    import pickle
-    import facebook
-    
-    # Initialize the graph and user.
-    logging.debug("Loading Graph API and User objects.")
-    graph = facebook.GraphAPI(access_token)
-    user = facebook.User(graph, "me", 2)
-    gpg = gnupg.GPG(gnupghome=GPG_HOME)
-    gpgkey = open('parent5446.asc').read()
-
-    # Create the training data
-    logging.debug("Beginning creation of training data.")
-    dataset = user.make_training_data()
-    logging.debug("Ending creation of training data.")
-
-    # Serialize, encrypt, and store the data
-    logging.info("Training data obtained. Beginning encryption.")
-    import_result = gpg.import_keys(gpgkey)
-    ciphertext = gpg.encrypt(pickle.dumps(dataset), import_result)
-    uniqid = uuid.uuid4()
-    fp = open('userdata/' + uniqid, 'wb')
-    fp.write(ciphertext)
-    fp.close()
-    logging.info("Script complete.")
-
-gather_data.delay()
+tasks.gather_data.delay()
