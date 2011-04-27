@@ -203,8 +203,7 @@ class User:
         logging.debug("Processing wall posts from user {0}.".format(user_id))
         wall = []
         for post in raw_wall:
-            year, month, day, hour, minute, second, tzinfo = post['created_time'].split('-T:+')
-            post['created_time'] = datetime.datetime(year, month, day, hour, minute, second)
+            post['created_time'] = datetime.datetime.strptime(post['created_time'][:-5], "%Y-%m-%dT%H:%M:%S")
             post['to'] = {'name': self.me['name'], 'id': user_id}
             wall.append(post)
         self.wall = wall
