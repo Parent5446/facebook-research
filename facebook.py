@@ -30,20 +30,9 @@ Graph API. Read more about the Graph API at http://developers.facebook.com/docs/
 APP_ID, APP_URL, APP_SECRET, GPG_HOME = "126673707408216", "http://parent5446.whizkidztech.com/facebook/", "c75102380655cb8dffafc9ac842d735a", "/home/parent5446"
 
 import urllib
-import httplib
-import urlparse
 import datetime
 import random
-import pickle
-import gnupg
-import uuid
-import cgi
-import cgitb
 import logging
-
-logging.info("Facebook Research Data Collection script initiating.")
-
-cgitb.enable()
 
 # Find a JSON parser
 logging.debug("Searching for JSON parser...")
@@ -402,62 +391,3 @@ class User:
     
         # Finally, add the data onto the training set
         return int(important), (size, time_diff, interact_me2you, interact_you2me, common_likes)
-
-# Get POST variables
-form = cgi.FieldStorage()
-authurl1 = "https://www.facebook.com/dialog/oauth?client_id={0}&redirect_uri={1}&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access"
-
-# Intitiate the session
-logging.info("Initiating the session.")
-if "code" in form:
-    logging.debug("Authentication code found: {0}".format(form['code'].value))
-    print "Content-Type: text/html"
-    print
-elif "error" in form:
-    logging.info("App authentication was denied: {0}; {1}".format(form['error_reason'], form['error_description']))
-    print "Content-Type: text/plain"
-    print
-    print "Authentication denied because", form['error_reason']
-    logging.info("Script complete.")
-    exit()
-else:
-    logging.info("App not authenticated. Redirecting.")
-    print "Location:", authurl1.format(APP_ID, APP_URL)
-    print
-    logging.info("Script complete.")
-    exit()
-
-# Get access token
-code = form['code'].value
-logging.debug("Opening HTTPS connection with Facebook.")
-authconn = httplib.HTTPSConnection('graph.facebook.com')
-authurl2 = '/oauth/access_token?client_id={0}&redirect_uri={1}&client_secret={2}&code={3}'
-logging.debug("Requesting access token from Facebook.")
-authconn.request('GET', authurl2.format(APP_ID, APP_URL, APP_SECRET, code))
-response = urlparse.parse_qs(authconn.getresponse().read())
-access_token = response['access_token'][0]
-logging.info("Access token obtained: {0}".format(access_token))
-
-# Initialize the graph and user.
-logging.debug("Loading Graph API and User objects.")
-graph = GraphAPI(access_token)
-user = User(graph, "me", 2)
-gpg = gnupg.GPG(gnupghome=GPG_HOME)
-gpgkey = open('parent5446.asc').read()
-
-# Create the training data
-logging.debug("Beginning creation of training data.")
-dataset = User.make_training_data()
-logging.debug("Ending creation of training data.")
-
-# Serialize, encrypt, and store the data
-logging.info("Training data obtained. Beginning encryption.")
-import_result = gpg.import_keys(gpgkey)
-ciphertext = gpg.encrypt(pickle.dumps(dataset), import_result)
-uniqid = uuid.uuid4()
-fp = open('userdata/' + uniqid, 'wb')
-fp.write(ciphertext)
-fp.close()
-logging.info("Script complete.")
-
-exit()
