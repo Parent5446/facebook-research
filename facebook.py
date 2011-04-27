@@ -31,6 +31,7 @@ APP_ID, APP_URL, APP_SECRET, GPG_HOME = "126673707408216", "http://parent5446.wh
 
 import urllib
 import httplib
+import urlparse
 import datetime
 import random
 import pickle
@@ -432,8 +433,8 @@ authconn = httplib.HTTPSConnection('graph.facebook.com')
 authurl2 = '/oauth/access_token?client_id={0}&redirect_uri={1}&client_secret={2}&code={3}'
 logging.debug("Requesting access token from Facebook.")
 authconn.request('GET', authurl2.format(APP_ID, APP_URL, APP_SECRET, code))
-response = cgi.parse(authconn.getresponse())
-access_token = response['code'][0]
+response = urlparse.parse_qs(authconn.getresponse().read())
+access_token = response['access_token'][0]
 logging.info("Access token obtained: {0}".format(access_token))
 
 # Initialize the graph and user.
