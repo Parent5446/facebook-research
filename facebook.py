@@ -99,9 +99,9 @@ class GraphAPI(object):
         """
         if isinstance(ids, list) or isinstance(ids, set):
             args["ids"] = ",".join(ids)
-        elif not isinstance(ids, str):
+        elif not isinstance(ids, str) and not isinstance(ids, unicode):
             logging.error("Invalid object ID type passed to graph API.")
-            raise Exception("Invalid id type.")
+            raise Exception("Invalid id type {0}.".format(type(ids)))
         return self.request(ids, args)
 
     def get_connection(self, conn_id, connection_name, **args):
