@@ -29,6 +29,14 @@ Graph API. Read more about the Graph API at http://developers.facebook.com/docs/
 from celery.task import task
 
 @task
+def add():
+    import hashlib
+    y = "test"
+    for x in range(1, 10000):
+        y=y+hashlib.sha1(y).hexdigest()
+    open('/var/www/facebook/testdata', 'w').write(y)
+
+@task
 def gather_data():
     # Import modules needed by task
     import gnupg
