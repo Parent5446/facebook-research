@@ -325,7 +325,7 @@ class User:
         @return: A list of tuples with an importance indicator and a tuple of data
         @rtype: C{list} of C{tuple} with C{str} and C{tuple}
         """
-        posts = user.wall_sample(1000)
+        posts = self.wall_sample(1000)
         training_data = []
         map(self.__fitness_internal, posts)
         return posts
