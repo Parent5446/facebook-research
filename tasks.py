@@ -39,6 +39,7 @@ def add():
 @task
 def gather_data(access_token):
     # Import modules needed by task
+    from config import GPG_HOME
     import gnupg
     import logging
     import uuid
@@ -60,8 +61,8 @@ def gather_data(access_token):
     logger.debug("Loading Graph API and User objects.")
     graph = facebook.GraphAPI(logger, json, access_token)
     user = facebook.User(graph, logger, "me", 2)
-    gpg = gnupg.GPG(gnupghome=GPG_HOME)
-    gpgkey = open('parent5446.asc').read()
+#    gpg = gnupg.GPG(gnupghome=GPG_HOME)
+#    gpgkey = open('parent5446.asc').read()
 
     # Create the training data
     logger.debug("Beginning creation of training data.")
@@ -70,8 +71,9 @@ def gather_data(access_token):
 
     # Serialize, encrypt, and store the data
     logger.info("Training data obtained. Beginning encryption.")
-    import_result = gpg.import_keys(gpgkey)
-    ciphertext = gpg.encrypt(pickle.dumps(dataset), import_result)
+#    import_result = gpg.import_keys(gpgkey)
+#    ciphertext = gpg.encrypt(pickle.dumps(dataset), import_result)
+    ciphertext = pickle.dumps(dataset)
     uniqid = uuid.uuid4()
     fp = open('userdata/' + uniqid, 'wb')
     fp.write(ciphertext)
