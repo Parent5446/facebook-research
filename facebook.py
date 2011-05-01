@@ -177,10 +177,10 @@ class User:
         # wall and likes.
         if friend_data == 2:
             self.logger.info("Retrieving friend data from user {0}.".format(user_id))
-            self.friends = [User(graph, logger, friend['id'], 0) for friend in graph.get_connection(user_id, 'friends', limit=5000)['data']]
+            self.friends = [User(graph, logger, friend['id'], 0) for friend in graph.get_connection(user_id, 'friends', limit=10)['data']]
         elif friend_data == 1:
             self.logger.debug("Getting friend list from user {0}.".format(user_id))
-            self.friends = graph.get_connection(user_id, 'friends', limit=5000)['data']
+            self.friends = graph.get_connection(user_id, 'friends', limit=10)['data']
         else:
             self.friends = []
         
@@ -386,8 +386,8 @@ class User:
         interact_me2you = len(posts_user_liked) + len(posts_user_commented)
     
         # Find how many of the user's posts the author liked or commented on in past three days
-        posts_author_liked = self.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=user, liked_by=author)
-        posts_author_commented = self.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=user, commented_by=author)
+        posts_author_liked = self.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=self, liked_by=author)
+        posts_author_commented = self.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=self, commented_by=author)
         interact_you2me = len(posts_author_liked) + len(posts_author_commented)
     
         # Check which likes the user and author have in common
