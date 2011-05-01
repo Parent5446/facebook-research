@@ -48,7 +48,7 @@ def gather_data(access_token):
     # Configure logger.
     logger = logging.getLogger('facebook-research')
     handler = logging.FileHandler('/var/log/facebook-research/access.log')
-    FORMAT = '%(asctime)s : %(process)d (%(levelname)s) [%(module)s.%(funcName)s] - %(message(s)'
+    FORMAT = '%(asctime)s : %(process)d (%(levelname)s) [%(module)s.%(funcName)s] - %(message)s'
     formatter = logging.Formatter(FORMAT)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
