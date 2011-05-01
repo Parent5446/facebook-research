@@ -32,27 +32,26 @@ APP_ID, APP_URL, APP_SECRET, GPG_HOME = "126673707408216", "http://parent5446.wh
 import urllib
 import datetime
 import random
-import logging
 
 # Find a JSON parser
-logging.debug("Searching for JSON parser...")
-try:
-    import json
-    _parse_json = lambda s: json.loads(s)
-except ImportError:
+def find_json(logger):
+    logging.debug("Searching for JSON parser...")
     try:
-        import simplejson
-        _parse_json = lambda s: simplejson.loads(s)
+        import json
+        _parse_json = lambda s: json.loads(s)
     except ImportError:
         try:
-            # For Google AppEngine
-            from django.utils import simplejson
+            import simplejson
             _parse_json = lambda s: simplejson.loads(s)
         except ImportError:
-            logging.critical("JSON parser not found.")
-            raise
+            try:
+                # For Google AppEngine
+                from django.utils import simplejson
+                _parse_json = lambda s: simplejson.loads(s)
+            except ImportError:
+                logging.critical("JSON parser not found.")
+                raise
 
-logging.debug("Defining the necessary classes.")
 
 class GraphAPI(object):
     """A client for the Facebook Graph API.
@@ -68,13 +67,14 @@ class GraphAPI(object):
     for details.
     """
     
-    def __init__(self, access_token=None):
+    def __init__(self, logger, access_token=None):
         """
         Store the access token.
         
         @param access_token: The Oauth access token from Facebook
         @type  access_token: C{Str}
         """
+        self.logger = logger
         self.access_token = access_token
     
     def get_object(self, ids, **args):
@@ -89,7 +89,7 @@ class GraphAPI(object):
         if isinstance(ids, list) or isinstance(ids, set):
             args["ids"] = ",".join(ids)
         elif not isinstance(ids, str) and not isinstance(ids, unicode):
-            logging.error("Invalid object ID type passed to graph API.")
+            self.logger.error("Invalid object ID type passed to graph API.")
             raise Exception("Invalid id type {0}.".format(type(ids)))
         return self.request(ids, args)
 
@@ -127,16 +127,16 @@ class GraphAPI(object):
         if not args: args = {}
         if self.access_token:
             args["access_token"] = self.access_token
-        logging.debug("Requesting {0} from Facebook.".format(path))
-	logging.debug("URL: https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
+        self.logger.debug("Requesting {0} from Facebook.".format(path))
+	    self.logger.debug("URL: https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
         file = urllib.urlopen("https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
         try:
             response = _parse_json(file.read())
         finally:
             file.close()
         if response.get("error"):
-            logging.debug("Error received from Facebook: {0}".format(response["error"]["message"]))
-            logging.error("Failed to retrieve {0} from Facebook.".format(path))
+            self.logger.debug("Error received from Facebook: {0}".format(response["error"]["message"]))
+            self.logger.error("Failed to retrieve {0} from Facebook.".format(path))
             raise Exception(response["error"]["type"], response["error"]["message"])
         return response
 
@@ -151,7 +151,7 @@ class User:
     """The keys that should be kept in wall posts
     @type: C{tuple}"""
     
-    def __init__(self, graph, user_id, friend_data=1):
+    def __init__(self, graph, logger, user_id, friend_data=1):
         """
         Get all information about the user and process it.
         
@@ -165,31 +165,32 @@ class User:
         @param friend_data: 0 to ignore friends, 1 to get friend list, and 2 to recurse friends
         @type  friend_data: C{int}
         """
-        logging.info("Retrieving data about user {0}.".format(user_id))
+        self.logger = logger
+        self.logger.info("Retrieving data about user {0}.".format(user_id))
         # Get the user
         self.me = graph.get_object(user_id)
         
         # If recurse_friends, make a user object for each friend, which in turn gets their
         # wall and likes.
         if friend_data == 2:
-            logging.info("Retrieving friend data from user {0}.".format(user_id))
+            self.logger.info("Retrieving friend data from user {0}.".format(user_id))
             self.friends = [User(graph, friend['id'], 0) for friend in graph.get_connection(user_id, 'friends', limit=5000)['data']]
         elif friend_data == 1:
-            logging.debug("Getting friend list from user {0}.".format(user_id))
+            self.logger.debug("Getting friend list from user {0}.".format(user_id))
             self.friends = graph.get_connection(user_id, 'friends', limit=5000)['data']
         else:
             self.friends = []
         
         # Get the user's wall and likes. Filter the wall to only get the fields we need
         # and only keep the IDs from the likes
-        logging.debug("Getting wall data from user {0}.".format(user_id))
+        self.logger.debug("Getting wall data from user {0}.".format(user_id))
         raw_wall = [dict([(key, value) for key, value in post.iteritems() if key in self.import_fields])
                      for post in graph.get_connection(user_id, 'feed', limit=500)['data']]
-        logging.debug("Getting likes and activities from user {0}.".format(user_id))
+        self.logger.debug("Getting likes and activities from user {0}.".format(user_id))
         self.likes = [like['id'] for like in graph.get_connection(user_id, 'likes')['data']]
         
         # Convert created_time into datetime
-        logging.debug("Processing wall posts from user {0}.".format(user_id))
+        self.logger.debug("Processing wall posts from user {0}.".format(user_id))
         wall = []
         for post in raw_wall:
             post['created_time'] = datetime.datetime.strptime(post['created_time'][:-5], "%Y-%m-%dT%H:%M:%S")
@@ -214,7 +215,7 @@ class User:
         @return: A list of common like IDs
         @rtype: C{list}
         """
-        logging.debug("Creating likes intersect with user {0} and {1}.".format(repr(self)['id'], repr(friend)['id']))
+        self.logger.debug("Creating likes intersect with user {0} and {1}.".format(repr(self)['id'], repr(friend)['id']))
         likes1 = self.likes
         likes2 = friend.likes
         return list(set(likes1) & set(likes2))
@@ -228,7 +229,7 @@ class User:
         @return: A list of posts
         @rtype: C{list}
         """
-        logging.debug("Generating {0} post wall sample for user {0}.".format(n, repr(self)['id']))
+        self.logger.debug("Generating {0} post wall sample for user {0}.".format(n, repr(self)['id']))
         posts = []
         for friend in self.friends:
             map(posts.append, friend.wall)
@@ -275,7 +276,7 @@ class User:
             logging_string += " liked by " + repr(liked_by)['id'] + ";"
         if commented_by:
             logging_string += " commented by " + repr(commented_by)['id'] + ";"
-        logging.debug(logging_string)
+        self.logger.debug(logging_string)
         
         # Start filtering
         posts = self.wall

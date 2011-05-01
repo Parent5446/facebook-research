@@ -35,46 +35,56 @@ import httplib
 import logging
 import urlparse
 import tasks
-#from celery.task import task
-
-logging.info("Facebook Research Data Collection script initiating.")
 
 cgitb.enable()
+
+# Configure logger.
+logger = logging.getLogger('facebook-research')
+handler = logging.FileHandler('/var/log/facebook-research/access.log')
+FORMAT = '%(asctime)s : %(process)d (%(levelname)s) [%(module)s.%(funcName)s] - %(message)s'
+formatter = logging.Formatter(FORMAT)
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+logger.setLevel(logging.DEBUG)
+
+find_json(logger)
+
+logger.info("Facebook Research Data Collection script initiating.")
 
 # Get POST variables
 form = cgi.FieldStorage()
 authurl1 = "https://www.facebook.com/dialog/oauth?client_id={0}&redirect_uri={1}&scope=user_activities,friends_activities,user_interests,friends_interests,user_likes,friends_likes,user_status,friends_status,email,read_mailbox,read_stream,offline_access"
 
 # Intitiate the session
-logging.info("Initiating the session.")
+logger.info("Initiating the session.")
 if "code" in form:
-    logging.debug("Authentication code found: {0}".format(form['code'].value))
+    logger.debug("Authentication code found: {0}".format(form['code'].value))
     print "Content-Type: text/html"
     print
 elif "error" in form:
-    logging.info("App authentication was denied: {0}; {1}".format(form['error_reason'], form['error_description']))
+    logger.info("App authentication was denied: {0}; {1}".format(form['error_reason'], form['error_description']))
     print "Content-Type: text/plain"
     print
     print "Authentication denied because", form['error_reason']
-    logging.info("Script complete.")
+    logger.info("Script complete.")
     exit()
 else:
-    logging.info("App not authenticated. Redirecting.")
+    logger.info("App not authenticated. Redirecting.")
     print "Location:", authurl1.format(APP_ID, APP_URL)
     print
-    logging.info("Script complete.")
+    logger.info("Script complete.")
     exit()
 
 # Get access token
 code = form['code'].value
-logging.debug("Opening HTTPS connection with Facebook.")
+logger.debug("Opening HTTPS connection with Facebook.")
 authconn = httplib.HTTPSConnection('graph.facebook.com')
 authurl2 = '/oauth/access_token?client_id={0}&redirect_uri={1}&client_secret={2}&code={3}'
-logging.debug("Requesting access token from Facebook.")
+logger.debug("Requesting access token from Facebook.")
 authconn.request('GET', authurl2.format(APP_ID, APP_URL, APP_SECRET, code))
 response = urlparse.parse_qs(authconn.getresponse().read())
 access_token = response['access_token'][0]
-logging.info("Access token obtained: {0}".format(access_token))
+logger.info("Access token obtained: {0}".format(access_token))
 
 # Authentication data has been gathered. All further steps can be
 # put into a task and set of asynchronously.
