@@ -203,12 +203,6 @@ class User:
         
         self.identity = {'name': self.me['name'], 'id': user_id}
     
-    def __repr__(self):
-        """
-        Stringify the user by returning the name and ID.
-        """
-        return self.identity
-    
     def intersect(self, friend):
         """
         Determine which likes the user has in common with a friend.
@@ -218,7 +212,7 @@ class User:
         @return: A list of common like IDs
         @rtype: C{list}
         """
-        self.logger.debug("Creating likes intersect with user {0} and {1}.".format(repr(self)['id'], repr(friend)['id']))
+        self.logger.debug("Creating likes intersect with user {0} and {1}.".format(self.identity['id'], friend.identity['id']))
         likes1 = self.likes
         likes2 = friend.likes
         return list(set(likes1) & set(likes2))
@@ -232,7 +226,7 @@ class User:
         @return: A list of posts
         @rtype: C{list}
         """
-        self.logger.debug("Generating {0} post wall sample for user {0}.".format(n, repr(self)['id']))
+        self.logger.debug("Generating {0} post wall sample for user {0}.".format(n, self.identity['id']))
         posts = []
         for friend in self.friends:
             map(posts.append, friend.wall)
@@ -264,7 +258,7 @@ class User:
         @rtype: C{list}
         """
         # Make user-readable log entry representing this filter.
-        logging_string = "Filter wall posts from user {0} for posts with ".format(repr(self)['id'])
+        logging_string = "Filter wall posts from user {0} for posts with ".format(self.identity['id'])
         if intersect:
             logging_string += "all:"
         else:
@@ -274,11 +268,11 @@ class User:
         if time_end:
             logging_string += " before " + str(time_end) + ";"
         if author:
-            logging_string += " posted by " + repr(author)['id'] + ";"
+            logging_string += " posted by " + author.identity['id'] + ";"
         if liked_by:
-            logging_string += " liked by " + repr(liked_by)['id'] + ";"
+            logging_string += " liked by " + liked_by.identity['id'] + ";"
         if commented_by:
-            logging_string += " commented by " + repr(commented_by)['id'] + ";"
+            logging_string += " commented by " + commented_by.identity['id'] + ";"
         self.logger.debug(logging_string)
         
         # Start filtering
@@ -292,17 +286,17 @@ class User:
         posts = set(posts)
         
         if isinstance(author, User):
-            posts3 = set([post for post in posts if post['from'] == repr(author)])
+            posts3 = set([post for post in posts if post['from'] == author.identity])
         else:
             posts3 = set(posts)
 
         if isinstance(liked_by, User):
-            posts4 = set([post for post in posts if [like for like in post['likes']['data'] if like == repr(liked_by)]])
+            posts4 = set([post for post in posts if [like for like in post['likes']['data'] if like == liked_by.identity]])
         else:
             posts4 = set(posts)
 
         if isinstance(liked_by, User):
-            posts5 = set([post for post in posts if [comm for comm in post['comments']['data'] if comm['from'] == repr(commented_by)]])
+            posts5 = set([post for post in posts if [comm for comm in post['comments']['data'] if comm['from'] == commented_by.identity]])
         else:
             posts5 = set(posts)
         
