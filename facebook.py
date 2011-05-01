@@ -177,7 +177,7 @@ class User:
         # wall and likes.
         if friend_data == 2:
             self.logger.info("Retrieving friend data from user {0}.".format(user_id))
-            self.friends = [User(graph, friend['id'], 0) for friend in graph.get_connection(user_id, 'friends', limit=5000)['data']]
+            self.friends = [User(graph, logger, friend['id'], 0) for friend in graph.get_connection(user_id, 'friends', limit=5000)['data']]
         elif friend_data == 1:
             self.logger.debug("Getting friend list from user {0}.".format(user_id))
             self.friends = graph.get_connection(user_id, 'friends', limit=5000)['data']
