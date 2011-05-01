@@ -27,7 +27,7 @@ Python client library for the Facebook Platform. This client library is designed
 Graph API. Read more about the Graph API at http://developers.facebook.com/docs/api.
 """
 
-APP_ID, APP_URL, APP_SECRET, GPG_HOME = "", "", "", ""
+from config import APP_ID, APP_URL, APP_SECRET, GPG_HOME
 
 import cgi
 import cgitb
