@@ -51,6 +51,8 @@ def find_json(logger):
             except ImportError:
                 logger.critical("JSON parser not found.")
                 raise
+    finally:
+        return _parse_json
 
 
 class GraphAPI(object):
@@ -67,7 +69,7 @@ class GraphAPI(object):
     for details.
     """
     
-    def __init__(self, logger, access_token=None):
+    def __init__(self, logger, json, access_token=None):
         """
         Store the access token.
         
@@ -75,6 +77,7 @@ class GraphAPI(object):
         @type  access_token: C{Str}
         """
         self.logger = logger
+        self._parse_json = json
         self.access_token = access_token
     
     def get_object(self, ids, **args):
@@ -131,7 +134,7 @@ class GraphAPI(object):
         self.logger.debug("URL: https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
         file = urllib.urlopen("https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
         try:
-            response = _parse_json(file.read())
+            response = self._parse_json(file.read())
         finally:
             file.close()
         if response.get("error"):
