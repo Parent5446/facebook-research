@@ -58,8 +58,8 @@ def gather_data(access_token):
     
     # Initialize the graph and user.
     logger.debug("Loading Graph API and User objects.")
-    graph = facebook.GraphAPI(access_token)
-    user = facebook.User(graph, "me", 2)
+    graph = facebook.GraphAPI(logger, access_token)
+    user = facebook.User(graph, logger, "me", 2)
     gpg = gnupg.GPG(gnupghome=GPG_HOME)
     gpgkey = open('parent5446.asc').read()
 
