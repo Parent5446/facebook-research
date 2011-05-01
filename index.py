@@ -47,8 +47,6 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.setLevel(logging.DEBUG)
 
-find_json(logger)
-
 logger.info("Facebook Research Data Collection script initiating.")
 
 # Get POST variables

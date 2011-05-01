@@ -44,7 +44,7 @@ def gather_data(access_token):
     import uuid
     import pickle
     import facebook
-
+    
     # Configure logger.
     logger = logging.getLogger('facebook-research')
     handler = logging.FileHandler('/var/log/facebook-research/access.log')
@@ -53,6 +53,8 @@ def gather_data(access_token):
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
+    
+    facebook.find_json(logger)
     
     # Initialize the graph and user.
     logger.debug("Loading Graph API and User objects.")
