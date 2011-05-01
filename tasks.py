@@ -44,25 +44,34 @@ def gather_data(access_token):
     import uuid
     import pickle
     import facebook
+
+    # Configure logger.
+    logger = logging.getLogger('facebook-research')
+    handler = logging.FileHandler('/var/log/facebook-research/access.log')
+    FORMAT = '%(asctime)s : %(process)d (%(levelname)s) [%(module)s.%(funcName)s] - %(message(s)'
+    formatter = logging.Formatter(FORMAT)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
     
     # Initialize the graph and user.
-    logging.debug("Loading Graph API and User objects.")
+    logger.debug("Loading Graph API and User objects.")
     graph = facebook.GraphAPI(access_token)
     user = facebook.User(graph, "me", 2)
     gpg = gnupg.GPG(gnupghome=GPG_HOME)
     gpgkey = open('parent5446.asc').read()
 
     # Create the training data
-    logging.debug("Beginning creation of training data.")
+    logger.debug("Beginning creation of training data.")
     dataset = user.make_training_data()
-    logging.debug("Ending creation of training data.")
+    logger.debug("Ending creation of training data.")
 
     # Serialize, encrypt, and store the data
-    logging.info("Training data obtained. Beginning encryption.")
+    logger.info("Training data obtained. Beginning encryption.")
     import_result = gpg.import_keys(gpgkey)
     ciphertext = gpg.encrypt(pickle.dumps(dataset), import_result)
     uniqid = uuid.uuid4()
     fp = open('userdata/' + uniqid, 'wb')
     fp.write(ciphertext)
     fp.close()
-    logging.info("Script complete.")
+    logger.info("Script complete.")
