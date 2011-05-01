@@ -37,7 +37,7 @@ def add():
     open('/var/www/facebook/testdata', 'w').write(y)
 
 @task
-def gather_data():
+def gather_data(access_token):
     # Import modules needed by task
     import gnupg
     import logging

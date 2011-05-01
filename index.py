@@ -79,4 +79,4 @@ logging.info("Access token obtained: {0}".format(access_token))
 # Authentication data has been gathered. All further steps can be
 # put into a task and set of asynchronously.
 
-tasks.gather_data.delay()
+tasks.gather_data.delay(access_token)
