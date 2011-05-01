@@ -128,7 +128,7 @@ class GraphAPI(object):
         if self.access_token:
             args["access_token"] = self.access_token
         self.logger.debug("Requesting {0} from Facebook.".format(path))
-	    self.logger.debug("URL: https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
+        self.logger.debug("URL: https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
         file = urllib.urlopen("https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
         try:
             response = _parse_json(file.read())
