@@ -35,7 +35,7 @@ import random
 
 # Find a JSON parser
 def find_json(logger):
-    logging.debug("Searching for JSON parser...")
+    logger.debug("Searching for JSON parser...")
     try:
         import json
         _parse_json = lambda s: json.loads(s)
@@ -49,7 +49,7 @@ def find_json(logger):
                 from django.utils import simplejson
                 _parse_json = lambda s: simplejson.loads(s)
             except ImportError:
-                logging.critical("JSON parser not found.")
+                logger.critical("JSON parser not found.")
                 raise
 
 
