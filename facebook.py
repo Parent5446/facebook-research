@@ -27,27 +27,35 @@ Python client library for the Facebook Platform. This client library is designed
 Graph API. Read more about the Graph API at http://developers.facebook.com/docs/api.
 """
 
-APP_ID, APP_URL, APP_SECRET, GPG_HOME = "126673707408216", "http://parent5446.whizkidztech.com/facebook/", "c75102380655cb8dffafc9ac842d735a", "/home/parent5446"
-
 import urllib
 import datetime
 import random
+import operator
 
 # Find a JSON parser
-def find_json(logger):
+def find_json(logger, parser=True):
     logger.debug("Searching for JSON parser...")
     try:
         import json
-        _parse_json = lambda s: json.loads(s)
+        if parser:
+            _parse_json = lambda s: json.loads(s)
+        else:
+            _parse_json = lambda s: json.dumps(s)
     except ImportError:
         try:
             import simplejson
-            _parse_json = lambda s: simplejson.loads(s)
+            if parser:
+                _parse_json = lambda s: simplejson.loads(s)
+            else:
+                _parse_json = lambda s: simplejson.dumps(s)
         except ImportError:
             try:
                 # For Google AppEngine
                 from django.utils import simplejson
-                _parse_json = lambda s: simplejson.loads(s)
+                if parser:
+                    _parse_json = lambda s: simplejson.loads(s)
+                else:
+                    _parse_json = lambda s: simplejson.dumps(s)
             except ImportError:
                 logger.critical("JSON parser not found.")
                 raise
@@ -132,11 +140,15 @@ class GraphAPI(object):
             args["access_token"] = self.access_token
         self.logger.debug("Requesting {0} from Facebook.".format(path))
         self.logger.debug("URL: https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
-        file = urllib.urlopen("https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
-        try:
-            response = self._parse_json(file.read())
-        finally:
-            file.close()
+        success = 0
+        while success < 3:
+            file = urllib.urlopen("https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
+            try:
+                response = self._parse_json(file.read())
+            finally:
+                file.close()
+            if not response.get("error"):
+                success = 4
         if response.get("error"):
             self.logger.debug("Error received from Facebook: {0}".format(response["error"]["message"]))
             self.logger.error("Failed to retrieve {0} from Facebook.".format(path))
@@ -150,7 +162,7 @@ class User:
     Stores a list of the user's wall posts, a list of friends (and IDs), and the user's likes.
     """
     
-    import_fields = 'comments', 'created_time', 'from', 'likes', 'message'
+    import_fields = 'comments', 'created_time', 'from', 'likes', 'message', 'id'
     """The keys that should be kept in wall posts
     @type: C{tuple}"""
     
@@ -169,6 +181,7 @@ class User:
         @type  friend_data: C{int}
         """
         self.logger = logger
+        self.graph = graph
         self.logger.info("Retrieving data about user {0}.".format(user_id))
         # Get the user
         self.me = graph.get_object(user_id)
@@ -177,10 +190,10 @@ class User:
         # wall and likes.
         if friend_data == 2:
             self.logger.info("Retrieving friend data from user {0}.".format(user_id))
-            self.friends = [User(graph, logger, friend['id'], 0) for friend in graph.get_connection(user_id, 'friends', limit=10)['data']]
+            self.friends = [User(graph, logger, friend['id'], 0) for friend in graph.get_connection(user_id, 'friends', limit=500).get('data', [])]
         elif friend_data == 1:
             self.logger.debug("Getting friend list from user {0}.".format(user_id))
-            self.friends = graph.get_connection(user_id, 'friends', limit=10)['data']
+            self.friends = graph.get_connection(user_id, 'friends', limit=500).get('data', [])
         else:
             self.friends = []
         
@@ -188,9 +201,9 @@ class User:
         # and only keep the IDs from the likes
         self.logger.debug("Getting wall data from user {0}.".format(user_id))
         raw_wall = [dict([(key, value) for key, value in post.iteritems() if key in self.import_fields])
-                     for post in graph.get_connection(user_id, 'feed', limit=500)['data']]
+                     for post in graph.get_connection(user_id, 'feed', limit=500).get('data', [])]
         self.logger.debug("Getting likes and activities from user {0}.".format(user_id))
-        self.likes = [like['id'] for like in graph.get_connection(user_id, 'likes')['data']]
+        self.likes = [like['id'] for like in graph.get_connection(user_id, 'likes').get('data', [])]
         
         # Convert created_time into datetime
         self.logger.debug("Processing wall posts from user {0}.".format(user_id))
@@ -198,6 +211,8 @@ class User:
         for post in raw_wall:
             post['created_time'] = datetime.datetime.strptime(post['created_time'][:-5], "%Y-%m-%dT%H:%M:%S")
             post['to'] = {'name': self.me['name'], 'id': user_id}
+            post['likes'] = post.get('likes', {'data': []})
+            post['comments'] = post.get('comments', {'data': []})
             wall.append(post)
         self.wall = wall
         
@@ -274,36 +289,59 @@ class User:
         if commented_by:
             logging_string += " commented by " + commented_by.identity['id'] + ";"
         self.logger.debug(logging_string)
+
+	def unique_posts(posts):
+            found = set()
+            for post in posts:
+                if not post.get('id', False):
+                    raise Exception(post)
+                if post['id'] not in found:
+                    yield post
+                    found.add(post['id'])
+        
+        def list_intersection(*args):
+            final = []
+            if len(args) == 0:
+                return []
+            for item in args[0]:
+                for list in args[1:]:
+                    if item not in list:
+                        continue
+                final.append(item)
+            return final
         
         # Start filtering
         posts = self.wall
+
+        if intersect:
+            default = posts
+        else:
+            default = []
             
         if isinstance(time_start, datetime.datetime):
             posts = [post for post in posts if post['created_time'] > time_start]
         if isinstance(time_end, datetime.datetime):
             posts = [post for post in posts if post['created_time'] < time_end]
         
-        posts = set(posts)
-        
         if isinstance(author, User):
-            posts3 = set([post for post in posts if post['from'] == author.identity])
+            posts1 = list(unique_posts([post for post in posts if post['from'] == author.identity]))
         else:
-            posts3 = set(posts)
+            posts1 = default
 
         if isinstance(liked_by, User):
-            posts4 = set([post for post in posts if [like for like in post['likes']['data'] if like == liked_by.identity]])
+            posts2 = list(unique_posts([post for post in posts if [like for like in post['likes'].get('data', []) if like == liked_by.identity]]))
         else:
-            posts4 = set(posts)
+            posts2 = default
 
-        if isinstance(liked_by, User):
-            posts5 = set([post for post in posts if [comm for comm in post['comments']['data'] if comm['from'] == commented_by.identity]])
+        if isinstance(commented_by, User):
+            posts3 = list(unique_posts([post for post in posts if [comm for comm in post['comments'].get('data', []) if comm['from'] == commented_by.identity]]))
         else:
-            posts5 = set(posts)
+            posts3 = default
         
         if intersect:
-            return posts.intersection(posts1, posts2, posts3, posts4, posts5)
+            return list_intersection(posts, posts1, posts2, posts3)
         else:
-            return posts.union(posts1, posts2, posts3, posts4, posts5)
+            return list(unique_posts(posts1 + posts2 + posts3))
 
     def make_training_data(self):
         """
@@ -321,8 +359,8 @@ class User:
         """
         posts = self.wall_sample(1000)
         training_data = []
-        map(self.__fitness_internal, posts)
-        return posts
+        data = map(self.__fitness_internal, posts)
+        return data
 
     def __fitness_internal(self, post):
         """
@@ -340,27 +378,33 @@ class User:
         @rtype: C{tuple} of C{str} and a C{tuple}
         """
         # If the user is the author, if the user liked it, or if the user commented, it is important.
-        if post['from'] == self.identity or self.identity in post['likes']['data'] or\
-                       [comm for comm in post['comments']['data'] if comm['from'] == self.identity]:
+        if post['from'] == self.identity or self.identity in post['likes'].get('data', []) or\
+                       [comm for comm in post['comments'].get('data', []) if comm['from'] == self.identity]:
             important = True
         else:
             important = False
     
         # Get the author and number of words
-        author = User(graph, post['from']['id'])
-        size = len(post['message'].split())
+        author = User(self.graph, self.logger, post['from']['id'], 0)
+        size = len(post.get('message', '').split())
     
         # Find out how long since the two users last interacted.
         if author.identity != self.identity:
             # For each wall, filter posts that the other person either wrote or commented on.
-            wall_me = self.wall_filter(end_time=post['created_time'], author=author, commented_by=author, intersect=False)
-            wall_you = author.wall_filter(end_time=post['created_time'], author=self, commented_by=self, intersect=False)
+            wall_me = self.wall_filter(time_end=post['created_time'], author=author, commented_by=author, intersect=False)
+            wall_you = author.wall_filter(time_end=post['created_time'], author=self, commented_by=self, intersect=False)
         
             # Sort and get the earliest from each.
             wall_me = sorted(wall_me, key=operator.itemgetter('created_time'))
             wall_you = sorted(wall_you, key=operator.itemgetter('created_time'))
-            first_me = wall_me[0]
-            first_you = wall_you[0]
+            if len(wall_me) > 0:
+                first_me = wall_me[0]
+            else:
+                first_me = {'created_time': datetime.datetime(1970, 1, 1, 0, 0, 0)}
+            if len(wall_you) > 0:
+                first_you = wall_you[0]
+            else:
+                first_you = {'created_time': datetime.datetime(1970, 1, 1, 0, 0, 0)}
         
             # Find which one is the earliest and calculate the time difference.
             if first_me['created_time'] > first_you['created_time']:
@@ -375,17 +419,17 @@ class User:
     
         # Find how many of the author's posts the user liked or commented on in past three days
         three_days_ago = post['created_time'] - datetime.timedelta(3)
-        posts_user_liked = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, liked_by=self)
-        posts_user_commented = author.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=author, commented_by=self)
+        posts_user_liked = author.wall_filter(time_start=three_days_ago, time_end=post['created_time'], author=author, liked_by=self)
+        posts_user_commented = author.wall_filter(time_start=three_days_ago, time_end=post['created_time'], author=author, commented_by=self)
         interact_me2you = len(posts_user_liked) + len(posts_user_commented)
     
         # Find how many of the user's posts the author liked or commented on in past three days
-        posts_author_liked = self.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=self, liked_by=author)
-        posts_author_commented = self.wall_filter(start_time=three_days_ago, end_time=post['created_time'], author=self, commented_by=author)
+        posts_author_liked = self.wall_filter(time_start=three_days_ago, time_end=post['created_time'], author=self, liked_by=author)
+        posts_author_commented = self.wall_filter(time_start=three_days_ago, time_end=post['created_time'], author=self, commented_by=author)
         interact_you2me = len(posts_author_liked) + len(posts_author_commented)
     
         # Check which likes the user and author have in common
-        common_likes = self.intersect(author)
+        common_likes = len(self.intersect(author))
     
         # Finally, add the data onto the training set
-        return int(important), (size, time_diff, interact_me2you, interact_you2me, common_likes)
+        return int(important), (size, time_diff.total_seconds(), interact_me2you, interact_you2me, common_likes)

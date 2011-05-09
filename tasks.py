@@ -61,21 +61,39 @@ def gather_data(access_token):
     logger.debug("Loading Graph API and User objects.")
     graph = facebook.GraphAPI(logger, json, access_token)
     user = facebook.User(graph, logger, "me", 2)
+
+    # See if we have collected user data already.
+    id = user.identity['id']
+    fp = open('/var/www/facebook/users')
+    for line in fp:
+        data = ','.split(line)
+        if data[0] == id:
+            logger.info('User data already processed.')
+            logger.debug('Uniqid: ' + data[1])
+            return True
+    fp.writeline(str(id) + ',starting,' + str(access_token))
+
 #    gpg = gnupg.GPG(gnupghome=GPG_HOME)
 #    gpgkey = open('parent5446.asc').read()
 
     # Create the training data
-    logger.debug("Beginning creation of training data.")
+    logger.info("Beginning creation of training data.")
     dataset = user.make_training_data()
-    logger.debug("Ending creation of training data.")
+    logger.info("Ending creation of training data.")
 
     # Serialize, encrypt, and store the data
     logger.info("Training data obtained. Beginning encryption.")
 #    import_result = gpg.import_keys(gpgkey)
 #    ciphertext = gpg.encrypt(pickle.dumps(dataset), import_result)
-    ciphertext = pickle.dumps(dataset)
+    json_dump = facebook.find_json(logger, False)
+    ciphertext = json_dump(dataset)
     uniqid = uuid.uuid4()
-    fp = open('userdata/' + uniqid, 'wb')
+    logger.debug("Uniqid: " + str(uniqid))
+    fp = open('userdata/' + str(uniqid), 'wb')
     fp.write(ciphertext)
+    fp.close()
+
+    # Add user to users file.
+    fp.writeline(str(id) + ',ending,' + str(uniqid))
     fp.close()
     logger.info("Script complete.")

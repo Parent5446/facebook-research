@@ -88,3 +88,20 @@ logger.info("Access token obtained: {0}".format(access_token))
 # put into a task and set of asynchronously.
 
 tasks.gather_data.delay(access_token)
+
+print """
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>SITHS Facebook Research</title>
+        <meta charset="utf-8" />
+        <style type="text/css">body { text-align: center; }</style>
+        
+    </head>
+    <body>
+        <h2>Thank You!</h2>
+        <p>You have done all you need to do for this part.
+           You may now close this window and browse as you please.</p>
+    </body>
+</html>
+"""
