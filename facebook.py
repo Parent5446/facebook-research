@@ -142,13 +142,17 @@ class GraphAPI(object):
         self.logger.debug("URL: https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
         success = 0
         while success < 3:
-            file = urllib.urlopen("https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
             try:
+                file = urllib.urlopen("https://graph.facebook.com/" + path + "?" + urllib.urlencode(args))
                 response = self._parse_json(file.read())
+            except IOError:
+                continue
             finally:
-                file.close()
+                pass
             if not response.get("error"):
                 success = 4
+            else:
+                success += 1;
         if response.get("error"):
             self.logger.debug("Error received from Facebook: {0}".format(response["error"]["message"]))
             self.logger.error("Failed to retrieve {0} from Facebook.".format(path))
@@ -216,7 +220,7 @@ class User:
             wall.append(post)
         self.wall = wall
         
-        self.identity = {'name': self.me['name'], 'id': user_id}
+        self.identity = {'name': self.me['name'], 'id': self.me['id']}
     
     def intersect(self, friend):
         """
